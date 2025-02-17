@@ -10,7 +10,7 @@ export default function page() {
 			<FilterSideBar />
 			{/* Second Div (Taking more space) */}
 			<div className="flex-grow p-4">
-				<MainData />
+				<MainData storeID={store as string} />
 			</div>
 		</div>
 	)
