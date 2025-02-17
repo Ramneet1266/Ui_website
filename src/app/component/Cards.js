@@ -1,6 +1,6 @@
 import React from "react"
 
-export default function Cards() {
+export default function Cards({ product }) {
 	return (
 		<div>
 			<div className=" bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">

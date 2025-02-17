@@ -1,17 +1,11 @@
-"use client"
-import React from "react"
-import FilterSideBar from "../component/StoreData/FilterSideBar"
 import MainData from "../component/StoreData/MainData"
 
-export default function page() {
+export default function StorePage() {
 	return (
-		<div className="px-56 py-10 custom-bg-home flex items-start gap-10">
-			{/* First Div */}
-			<FilterSideBar />
-			{/* Second Div (Taking more space) */}
-			<div className="flex-grow p-4">
-				<MainData storeID={store as string} />
-			</div>
+		<div className="p-10">
+			<h1 className="text-2xl font-bold">Store Details</h1>
+			<MainData />{" "}
+			{/* No need to pass storeId, it will be handled inside MainData */}
 		</div>
 	)
 }

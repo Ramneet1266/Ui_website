@@ -27,7 +27,9 @@
 		"**/*.ts",
 		"**/*.tsx",
 		".next/types/**/*.ts",
-		"src/app/component/StoreData/FilterSideBar.tsx"
+		"src/app/component/StoreData/FilterSideBar.tsx",
+		"src/app/component/firebaseUtil.js",
+		"src/app/component/StoreData/MainData.jsx"
 	],
 	"exclude": ["node_modules"]
 }

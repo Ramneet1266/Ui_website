@@ -1,5 +1,5 @@
-import {db} from "../lib/firebase"
-import { collection, getDocs } from "firebase/firestore"
+import { db } from "../lib/firebase"
+import { collection, getDocs, query, where } from "firebase/firestore"
 
 // Function to fetch all stores from Firestore
 export const fetchStores = async () => {
@@ -19,28 +19,49 @@ export const fetchStores = async () => {
 }
 
 export const getCategoriesForStore = async (storeID) => {
-    const categoriesRef = collection(db, "categories");
-    const q = query(categoriesRef, where("storeID", "==", storeID));
-    const querySnapshot = await getDocs(q);
-    let categories = [];
-    
-    querySnapshot.forEach((doc) => {
-      categories.push({ id: doc.id, ...doc.data() });
-    });
-    
-    return categories;
-  };
-  
-  // Function to get products for a specific category
-  export const getProductsForCategory = async (categoryID) => {
-    const productsRef = collection(db, "products");
-    const q = query(productsRef, where("catalogueCategoryId", "==", categoryID));
-    const querySnapshot = await getDocs(q);
-    let products = [];
-    
-    querySnapshot.forEach((doc) => {
-      products.push({ id: doc.id, ...doc.data() });
-    });
-    
-    return products;
-  };
+	try {
+		console.log("Fetching categories for store:", storeID) // Debugging
+
+		if (!storeID) throw new Error("storeID is undefined")
+
+		const categoriesRef = collection(
+			db,
+			`stores/${storeID}/categories`
+		) // Access subcollection
+		const querySnapshot = await getDocs(categoriesRef)
+
+		let categories = []
+		querySnapshot.forEach((doc) => {
+			categories.push({ id: doc.id, ...doc.data() })
+		})
+
+		console.log("Fetched categories:", categories) // Debug fetched data
+
+		if (categories.length === 0)
+			throw new Error("No categories found for this store")
+
+		return categories
+	} catch (error) {
+		console.error("Error fetching categories:", error)
+		throw error
+	}
+}
+
+// Function to fetch all products for a specific category in a specific store
+export const getProductsForCategory = async (storeID, categoryID) => {
+	const productsRef = collection(
+		db,
+		`stores/${storeID}/categories/${categoryID}/products`
+	)
+
+	// No need to filter by catalogueCategoryId, just fetch all products in this category
+	const querySnapshot = await getDocs(productsRef)
+
+	let products = []
+
+	querySnapshot.forEach((doc) => {
+		products.push({ id: doc.id, ...doc.data() })
+	})
+
+	return products
+}
