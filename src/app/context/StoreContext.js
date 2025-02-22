@@ -1,31 +1,45 @@
-"use client";
-import React, { createContext, useContext, useState } from "react";
 
-// Create Context
+"use client";
+import { createContext, useContext, useState } from "react";
+
 const StoreContext = createContext();
 
-// Context Provider
 export function StoreProvider({ children }) {
   const [likedItems, setLikedItems] = useState([]);
   const [cartItems, setCartItems] = useState([]);
 
-  // Toggle Like Item
-  function toggleLike(item) {
+  // Toggle liked items (wishlist)
+  const toggleLike = (product) => {
     setLikedItems((prev) =>
-      prev.some((i) => i.id === item.id)
-        ? prev.filter((i) => i.id !== item.id) // Remove if already liked
-        : [...prev, item] // Add if not liked
+      prev.some((item) => item.id === product.id)
+        ? prev.filter((item) => item.id !== product.id)
+        : [...prev, product]
     );
-  }
+  };
+  const addToCart = (product) => {
+    setCartItems(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+ 
+  // In your StoreContext provider
+// const addToCart = (product) => {
+//   setCartItems((prev) =>
+//     prev.some((item) => item.id === product.id)
+//       ? prev.filter((item) => item.id !== product.id) // Remove if exists
+//       : [...prev, product] // Add if not exists
+//   );
+// };
 
-  // Add to Cart
-  function addToCart(item) {
-    setCartItems((prev) =>
-      prev.some((i) => i.id === item.id)
-        ? prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i))
-        : [...prev, { ...item, quantity: 1 }]
-    );
-  }
+// Remove the old addToCart and ensure you're exporting this new version
 
   return (
     <StoreContext.Provider value={{ likedItems, cartItems, toggleLike, addToCart }}>
@@ -34,7 +48,4 @@ export function StoreProvider({ children }) {
   );
 }
 
-// Custom Hook for using context
-export function useStore() {
-  return useContext(StoreContext);
-}
+export const useStore = () => useContext(StoreContext);

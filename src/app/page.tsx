@@ -77,7 +77,7 @@ export default function Home() {
   return (
     <div className="flex flex-col overflow-hidden">
       <div className="custom-bg px-20 pb-20">
-        <div className="relative w-48 mr-10 mt-10 ml-10">
+        <div className="relative w-48 mr-10 mt-[80px] ml-10">
           {/* <h2 className="pb-2 text-white">   Select Store Category</h2> */}
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -101,7 +101,9 @@ export default function Home() {
           )}
         </div>
         <div className="ml-10 mt-10 mr-10">
-          <div className="gap-10 grid grid-cols-4 w-full">
+          <div className="gap-10 grid grid-cols-1 lg:grid-cols-4 w-full">
+          {/* <div className="grid gap-6 sm:gap-8 md:gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-full"> */}
+
             {filteredStores.map((store) => (
               <Link key={store.storeId} href={`/store/${store.storeId}`}>
                 <FeaturedProduct store={store} />
