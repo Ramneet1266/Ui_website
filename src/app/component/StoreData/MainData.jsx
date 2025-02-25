@@ -6,7 +6,8 @@ import {
 	getCategoriesForStore,
 	getProductsForCategory,
 } from "../firebaseUtil" // Import the functions to fetch categories and products
-import Cards from "../Cards"
+
+import Cards from "./Cards"
 
 export default function MainData() {
 	const params = useParams() // Use useParams to get storeId
@@ -43,12 +44,19 @@ export default function MainData() {
 			const fetchProducts = async () => {
 				try {
 					const allProducts = await Promise.all(
-						categories.map(
-							(category) =>
-								getProductsForCategory(storeId, category.id) // Pass storeId and categoryId
-						)
+						categories.map(async (category) => {
+							const products = await getProductsForCategory(
+								storeId,
+								category.id
+							)
+							// Attach categoryId to each product
+							return products.map((product) => ({
+								...product,
+								categoryId: category.id,
+							}))
+						})
 					)
-					setProducts(allProducts.flat()) // Flatten the array of products
+					setProducts(allProducts.flat()) // Flatten to merge all product arrays
 				} catch (err) {
 					console.error("Error fetching products:", err)
 					setError("Failed to load products")
@@ -89,7 +97,7 @@ export default function MainData() {
 			</h2>
 			<div className="grid grid-cols-3 gap-5 py-5">
 				{products.map((product, index) => (
-					<Cards key={index} product={product} />
+					<Cards key={index} product={product} storeId={storeId} /> // Pass storeId
 				))}
 			</div>
 		</div>

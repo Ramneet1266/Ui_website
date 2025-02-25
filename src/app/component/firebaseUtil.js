@@ -1,5 +1,12 @@
 import { db } from "../lib/firebase"
-import { collection, getDocs, query, where } from "firebase/firestore"
+import {
+	collection,
+	doc,
+	getDoc,
+	getDocs,
+	query,
+	where,
+} from "firebase/firestore"
 
 // Function to fetch all stores from Firestore
 export const fetchStores = async () => {
@@ -64,4 +71,53 @@ export const getProductsForCategory = async (storeID, categoryID) => {
 	})
 
 	return products
+}
+export const getProductDetails = async (productId, categoryId) => {
+	const productRef = doc(
+		db,
+		"stores",
+		"storeId",
+		"categories",
+		categoryId,
+		"products",
+		productId
+	)
+	const docSnap = await getDoc(productRef)
+
+	if (docSnap.exists()) {
+		return docSnap.data() // Return the product details
+	} else {
+		throw new Error("Product not found")
+	}
+}
+export const getProductById = async (
+	storeID,
+	categoryID,
+	productId
+) => {
+	try {
+		// Fetch the product document from Firestore
+		const productRef = doc(
+			db,
+			`stores/${storeID}/categories/${categoryID}/products`,
+			productId
+		)
+		const docSnap = await getDoc(productRef)
+
+		if (!docSnap.exists()) {
+			throw new Error("Product not found")
+		}
+
+		// Return the full product data
+		return {
+			id: docSnap.id,
+			catalogueProductName: docSnap.data().catalogueProductName,
+			catalogueCategoryName: docSnap.data().catalogueCategoryName,
+			productImageUrl: docSnap.data().productImageUrl,
+			productDescription: docSnap.data().productDescription,
+		}
+	} catch (error) {
+		console.error("Error fetching product:", error)
+		throw error
+	}
 }
