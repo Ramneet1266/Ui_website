@@ -7,6 +7,7 @@ import FeaturedProduct from "./component/FeaturedProduct";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link"; // Import Link for navigation
 
+
 // Define the Store type
 type Store = {
   storeId: string;
@@ -22,7 +23,7 @@ export default function Home() {
   const [isOpen, setIsOpen] = useState(false);
   const [stores, setStores] = useState<Store[]>([]); // Ensure stores use the correct type
   const [filteredStores, setFilteredStores] = useState<Store[]>([]); // For filtered stores
-  const [selectedCategory, setSelectedCategory] = useState<string>("All"); // Track selected category
+  const [selectedCategory, setSelectedCategory] = useState<string>("Select  Category"); // Track selected category
   const [categories, setCategories] = useState<string[]>([]); // Store all categories
 
   // Fetch stores from Firebase
@@ -76,15 +77,17 @@ export default function Home() {
   return (
     <div className="flex flex-col overflow-hidden">
       <div className="custom-bg px-20 pb-20">
-        <div className="relative w-48 mr-10 mt-10 ml-10">
+        <div className="relative w-48 mr-10 mt-[80px] ml-10">
+          {/* <h2 className="pb-2 text-white">   Select Store Category</h2> */}
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="flex justify-between items-center w-[200px] px-4 py-2 text-white bg-blue-500 rounded-lg shadow-md"
           >
-            Select Category <ChevronDown className="w-4 h-4" />
+            {selectedCategory ===null?"Select Category" : selectedCategory}
+             <ChevronDown className="w-4 h-4" />
           </button>
           {isOpen && (
-            <div className="absolute w-full mt-2 bg-white border rounded-lg shadow-lg">
+            <div className=" z-50 absolute w-full mt-2 bg-white border rounded-lg shadow-lg">
               {categories.map((category) => (
                 <div
                   key={category}
@@ -98,7 +101,9 @@ export default function Home() {
           )}
         </div>
         <div className="ml-10 mt-10 mr-10">
-          <div className="gap-10 grid grid-cols-4 w-full">
+          <div className="gap-10 grid grid-cols-1 lg:grid-cols-4 w-full">
+          {/* <div className="grid gap-6 sm:gap-8 md:gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-full"> */}
+
             {filteredStores.map((store) => (
               <Link key={store.storeId} href={`/store/${store.storeId}`}>
                 <FeaturedProduct store={store} />
