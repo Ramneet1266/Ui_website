@@ -4,6 +4,9 @@ import { ArrowRight, Star, Minus, Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getProductById } from "@/app/component/firebaseUtil";
 import { useStore } from "..//..//..//..//context/StoreContext";  // Importing useStore to access cart state
+import { toast } from "react-toastify";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/app/lib/firebase";
 
 interface Product {
   id: string;
@@ -61,6 +64,44 @@ export default function Page({
   if (loading) return <p className="p-10">Loading...</p>;
   if (!product) return <p className="p-10">Product not found</p>;
 
+  const handleBuyNow = async () => {
+    // Get user data from localStorage
+    const user = JSON.parse(localStorage.getItem("user") || "{}"); // Handle case where localStorage is null
+    
+    // Ensure user.uid exists before proceeding
+    if (!user?.uid) {
+      toast.error("Please log in to place an order.");
+      return;
+    }
+  
+    if (!product) {
+      toast.error("No product details available.");
+      return;
+    }
+  
+    try {
+      // Add the order to Firestore
+      const orderRef = doc(db, "orders", `${user.uid}_${productId}`);
+      await setDoc(orderRef, {
+        userID: user.uid,
+        storeID: storeId,
+        categoryID: categoryId ?? "", // Ensure `categoryId` is not null
+        productID: productId,
+        productName: product.catalogueProductName,
+        productImageUrl: product.productImageUrl,
+        quantity: 1, // Assuming the user is ordering 1 item, adjust as needed
+  
+      });
+  
+      toast.success("Order placed successfully!");
+      router.push("/orders"); // Redirect to the orders page or wherever appropriate
+    } catch (error) {
+      console.error("Error placing order:", error);
+      toast.error("Failed to place order. Please try again.");
+    }
+  };
+
+    
   const handleAddToCart = () => {
     if (product) {
       addToCart(product); // Add the product to the cart when the button is clicked
@@ -142,8 +183,14 @@ export default function Page({
           </div>
           {/* Buy & Add to Cart Buttons */}
           <div className="mt-6 flex gap-4">
-            <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg text-lg font-semibold">
+            <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg text-lg font-semibold"
+            onClick={handleBuyNow}
+            >
+              
+              
               Buy Now
+
+              
             </button>
             <button
               className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg text-lg font-semibold"

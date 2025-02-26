@@ -137,19 +137,30 @@ const auth = getAuth(app)
 // Login function
 export const loginService = async (email, password) => {
 	try {
-		const userCredential = await signInWithEmailAndPassword(
-			auth,
-			email,
-			password
-		)
-		toast.success("Login successful!")
-		return userCredential
+		// Sign in with email and password
+		const userCredential = await signInWithEmailAndPassword(auth, email, password);
+		
+		// Get the UID and other user details from the signed-in user
+		const { uid, email: userEmail } = userCredential.user;
+
+		// Save user data (UID, email, etc.) in localStorage
+		localStorage.setItem('user', JSON.stringify({
+			uid: uid,
+			email: userEmail,
+		}));
+
+		// Show success toast
+		toast.success("Login successful!");
+
+		// Return the userCredential if needed
+		return userCredential;
 	} catch (error) {
-		toast.error("Login failed: " + error.message)
-		throw error
+		// Show error toast
+		toast.error("Login failed: " + error.message);
+		// Throw the error so it can be caught in the component
+		throw error;
 	}
 }
-
 // Register service to register user and store info in Firestore
 // Function to register a user and create a document in the 'users' collectione
 export const registerService = async (email, password, name) => {
