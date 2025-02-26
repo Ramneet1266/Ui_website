@@ -121,3 +121,78 @@ export const getProductById = async (
 		throw error
 	}
 }
+import { toast } from "react-toastify"
+import {
+	createUserWithEmailAndPassword,
+	getAuth,
+	signInWithEmailAndPassword,
+	signOut,
+} from "firebase/auth"
+import { app } from "../lib/firebase"
+
+const auth = getAuth(app)
+
+// Login function
+export const loginService = async (email, password) => {
+	try {
+	  const userCredential = await signInWithEmailAndPassword(auth, email, password)
+	  toast.success("Login successful!")
+	  return userCredential
+	} catch (error) {
+	  toast.error("Login failed: " + error.message)
+	  throw error
+	}
+  }
+
+// Register service to register user and store info in Firestore
+export const registerService = async (email, password, name) => {
+	try {
+	  console.log("Attempting to register with:", email, password);
+  
+	  // Validate email format (basic regex check)
+	  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+	  if (!emailRegex.test(email)) {
+		throw new Error("Invalid email format.");
+	  }
+  
+	  // Validate password length
+	  if (password.length < 6) {
+		throw new Error("Password should be at least 6 characters long.");
+	  }
+  
+	  // Firebase authentication to create a user
+	  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+	  const user = userCredential.user;
+  
+	  console.log("User created successfully:", user.email);
+  
+	  // Create the 'Users' document with user ID
+	  const userRef = doc(db, "Users", user.uid); // Document reference using user UID
+	  await setDoc(userRef, {
+		email: user.email,
+		name: name,
+		uid: user.uid,
+	  });
+  
+	  console.log("User document created with ID:", user.uid);
+  
+	  // Show success notification
+	  toast.success("User registered successfully!");
+  
+	  return userCredential;
+	} catch (error) {
+	  console.log("Error during registration:", error.message);
+  
+	  if (error.code === "auth/email-already-in-use") {
+		toast.error("This email is already in use. Please use a different one.");
+	  } else if (error.code === "auth/invalid-email") {
+		toast.error("The email address is not valid.");
+	  } else if (error.code === "auth/weak-password") {
+		toast.error("Password should be at least 6 characters long.");
+	  } else {
+		toast.error("Registration failed: " + error.message);
+	  }
+  
+	  throw error;
+	}
+  };

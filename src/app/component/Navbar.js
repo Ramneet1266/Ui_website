@@ -42,7 +42,7 @@ const Navbar = () => {
 				{/* Icons Section */}
 				<div className="flex items-center space-x-6 ml-auto">
 					{/* Wishlist Icon */}
-					<Link href="../store/Wishlist">
+					<Link href="/store/Wishlist">
 						<div className="relative cursor-pointer">
 							{likedItems.length > 0 ? (
 								<FaHeart className="text-2xl text-black"></FaHeart>
@@ -58,7 +58,7 @@ const Navbar = () => {
 					</Link>
 
 					{/* Shopping Cart Icon */}
-					<Link href="../store/Cart">
+					<Link href="/store/Cart">
 						<div className="relative cursor-pointer">
 							{cartItems.length > 0 ? (
 								<BsCartPlusFill className="text-2xl text-black"></BsCartPlusFill>
