@@ -12,9 +12,13 @@ import  { useRouter } from "next/navigation";
 
 interface Product {
   id: string;
+  storeId: string; // Add storeId here
+
   productImageUrl?: string;
   catalogueProductName: string;
-  productDescription?: string;
+  catalogueCategoryId: string; // Add this
+  categoryId: string; 
+  // productDescription?: string;
 }
 
 const WishlistPage: React.FC =() => {
@@ -59,7 +63,7 @@ const WishlistPage: React.FC =() => {
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {likedItems.map((product:Product) => (
-            <Cards key={product.id} product={product} />
+            <Cards key={product.id} product={product}  storeId={product.storeId || ""}/>
           ))}
         </div>
       )}

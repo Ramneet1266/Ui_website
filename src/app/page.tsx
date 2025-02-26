@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "..//app//lib//firebase"; // Adjust path as needed
-import FeaturedProduct from "./component/FeaturedProduct";
+import FeaturedProduct from "../app/component/FeaturedProduct";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link"; // Import Link for navigation
 
