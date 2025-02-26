@@ -1,134 +1,137 @@
 "use client"
 import React, { useState } from "react"
-import "./login.css"
 import { useRouter } from "next/navigation"
 import { toast } from "react-toastify"
-import { loginService, registerService } from "../component/firebaseUtil"
+import {
+	registerService,
+	loginService,
+} from "../component/firebaseUtil"
 
 export default function Page() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")  // Added for registration
-  const [isLogin, setIsLogin] = useState(true)  // New state to toggle between login and register views
-  const [error, setError] = useState("")
-  const router = useRouter()
+	const [email, setEmail] = useState("")
+	const [password, setPassword] = useState("")
+	const [name, setName] = useState("") // For registration
+	const [isLogin, setIsLogin] = useState(true) // Toggle between login and registration
+	const [error, setError] = useState("")
+	const router = useRouter()
 
-  // Handle user registration
-  const handleRegister = async (e: any) => {
-    e.preventDefault()
-    setError("")
+	// Handle user registration
+	const handleRegister = async (e: any) => {
+		e.preventDefault()
+		setError("")
 
-    if (!email || !password || !name) {
-      setError("Please fill all the fields.")
-      return
-    }
+		if (!email || !password || !name) {
+			setError("Please fill all the fields.")
+			return
+		}
 
-    try {
-      const res = await registerService(email, password, name)
-      if (res) {
-        toast.success("Registration successful! Please log in now.")
-        setIsLogin(true)  // Switch to login view after successful registration
-      }
-    } catch (error) {
-      toast.error("Error during registration: ")
-    }
-  }
+		try {
+			const user = await registerService(email, password, name) // Call the register service
+			if (user) {
+				toast.success("Registration successful! Please log in now.")
+				setIsLogin(true) // Switch to login after successful registration
+			}
+		} catch (error) {
+			toast.error("Error during registration: " + error)
+		}
+	}
 
-  // Handle user login
-  const handleLogin = async (e: any) => {
-    e.preventDefault()
-    setError("")
+	// Handle user login
+	const handleLogin = async (e: any) => {
+		e.preventDefault()
+		setError("")
 
-    if (!email || !password) {
-      setError("Please fill in all fields.")
-      return
-    }
+		if (!email || !password) {
+			setError("Please fill in all fields.")
+			return
+		}
 
-    try {
-      const res = await loginService(email, password)
-      if (res) {
-        toast.success("Login successful!")
-        router.push("/")  // Redirect to the homepage after successful login
-      }
-    } catch (error) {
-      toast.error("Failed to log in: ")
-    }
-  }
+		try {
+			const res = await loginService(email, password)
+			if (res) {
+				toast.success("Login successful!")
+				router.push("/") // Redirect to homepage on successful login
+			}
+		} catch (error) {
+			toast.error("Failed to log in: " + error)
+		}
+	}
 
-  return (
-    <div className="h-[100vh] items-center flex bg-gradient justify-center px-5 lg:px-0">
-      <div className="max-w-screen-lg bg-white shadow-2xl sm:rounded-lg flex justify-center flex-1">
-        <div className="flex-1 bg-blue-900 rounded-tl-lg rounded-bl-lg text-center hidden md:flex">
-          <div
-            className="m-12 xl:m-16 w-full bg-contain bg-center bg-no-repeat"
-            style={{
-              backgroundImage: `url(https://www.tailwindtap.com/assets/common/marketing.svg)`,
-            }}
-          ></div>
-        </div>
-        <div className="lg:w-1/2 xl:w-5/12 p-6 sm:p-12">
-          <div className="flex flex-col items-center">
-            <div className="text-center">
-              <h1 className="text-2xl mb-5 xl:text-4xl font-extrabold text-blue-900">
-                {isLogin ? "User Login" : "User Registration"}
-              </h1>
-              <p className="text-[16px] text-gray-500">
-                Hey, enter your details to {isLogin ? "login" : "register"}
-              </p>
-            </div>
-            <div className="w-full flex-1 mt-8">
-              <div className="mx-auto max-w-xs flex flex-col gap-4">
-                {error && <p className="text-red-500">{error}</p>}
-                <form className="flex flex-col mb-10 gap-4">
-                  {!isLogin && (
-                    <input
-                      type="text"
-                      className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your name"
-                    />
-                  )}
-                  <input
-                    type="email"
-                    className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                  />
-                  <input
-                    type="password"
-                    className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                  />
-                  {isLogin ? (
-                    <button
-                      onClick={handleLogin}
-                      className="mt-5 tracking-wide font-semibold bg-blue-900 text-gray-100 w-full py-4 rounded-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out flex items-center justify-center focus:shadow-outline focus:outline-none"
-                    >
-                      <span className="ml-3">User Login</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleRegister}
-                      className="mt-5 tracking-wide font-semibold bg-blue-900 text-gray-100 w-full py-4 rounded-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out flex items-center justify-center focus:shadow-outline focus:outline-none"
-                    >
-                      <span className="ml-3">Register</span>
-                    </button>
-                  )}
-                </form>
-                <p
-                  className="mt-4 text-sm text-blue-900 cursor-pointer"
-                  onClick={() => setIsLogin(!isLogin)} // Toggle between login and register
-                >
-                  {isLogin
-                    ? "Don't have an account? Register here"
-                    : "Already have an account? Login"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+	return (
+		<div className="h-[100vh] items-center flex bg-gradient justify-center px-5 lg:px-0">
+			<div className="max-w-screen-lg bg-white shadow-2xl sm:rounded-lg flex justify-center flex-1">
+				<div className="flex-1 bg-blue-900 rounded-tl-lg rounded-bl-lg text-center hidden md:flex">
+					<div
+						className="m-12 xl:m-16 w-full bg-contain bg-center bg-no-repeat"
+						style={{
+							backgroundImage: `url(https://www.tailwindtap.com/assets/common/marketing.svg)`,
+						}}
+					></div>
+				</div>
+				<div className="lg:w-1/2 xl:w-5/12 p-6 sm:p-12">
+					<div className="flex flex-col items-center">
+						<div className="text-center">
+							<h1 className="text-2xl mb-5 xl:text-4xl font-extrabold text-blue-900">
+								{isLogin ? "User Login" : "User Registration"}
+							</h1>
+							<p className="text-[16px] text-gray-500">
+								Hey, enter your details to{" "}
+								{isLogin ? "login" : "register"}
+							</p>
+						</div>
+						<div className="w-full flex-1 mt-8">
+							<div className="mx-auto max-w-xs flex flex-col gap-4">
+								{error && <p className="text-red-500">{error}</p>}
+								<form className="flex flex-col mb-10 gap-4">
+									{!isLogin && (
+										<input
+											type="text"
+											className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
+											onChange={(e) => setName(e.target.value)}
+											placeholder="Enter your name"
+										/>
+									)}
+									<input
+										type="email"
+										className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
+										onChange={(e) => setEmail(e.target.value)}
+										placeholder="Enter your email"
+									/>
+									<input
+										type="password"
+										className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
+										onChange={(e) => setPassword(e.target.value)}
+										placeholder="Password"
+									/>
+									{isLogin ? (
+										<button
+											onClick={handleLogin}
+											className="mt-5 tracking-wide font-semibold bg-blue-900 text-gray-100 w-full py-4 rounded-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out flex items-center justify-center focus:shadow-outline focus:outline-none"
+										>
+											<span className="ml-3">User Login</span>
+										</button>
+									) : (
+										<button
+											onClick={handleRegister}
+											className="mt-5 tracking-wide font-semibold bg-blue-900 text-gray-100 w-full py-4 rounded-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out flex items-center justify-center focus:shadow-outline focus:outline-none"
+										>
+											<span className="ml-3">Register</span>
+										</button>
+									)}
+								</form>
+								<p
+									className="mt-4 text-sm text-blue-900 cursor-pointer"
+									onClick={() => setIsLogin(!isLogin)} // Toggle between login and register
+								>
+									{isLogin
+										? "Don't have an account? Register here"
+										: "Already have an account? Login"}
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	)
 }
