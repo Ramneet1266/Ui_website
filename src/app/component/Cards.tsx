@@ -1,110 +1,137 @@
-"use client"
-import React from "react"
-import { FiHeart } from "react-icons/fi"
-import { useRouter } from "next/navigation"
-import { FaHeart } from "react-icons/fa" // Filled heart icon
-import { BsCartPlus, BsCartDash } from "react-icons/bs"
-import { useStore } from "../context/StoreContext"
+"use client";
+import React from "react";
+import { FiHeart } from "react-icons/fi";
+import { useRouter } from "next/navigation";
+import { FaHeart } from "react-icons/fa"; // Filled heart icon
+import { BsCartPlus, BsCartDash } from "react-icons/bs";
+import { useStore } from "../context/StoreContext";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/app/lib/firebase"; // Make sure to import Firestore db
+import { toast } from "react-toastify";
+
 interface Product {
-	id: string
-	productImageUrl?: string
-	catalogueProductName: string
-	catalogueCategoryId: string
-	productDescription?: string
-	categoryId: string // ✅ Add this line
+  id: string;
+  productImageUrl?: string;
+  catalogueProductName: string;
+  catalogueCategoryId: string;
+  productDescription?: string;
+  categoryId: string;
 }
 
 interface CardProps {
-	product: Product
-	storeId: string
+  product: Product;
+  storeId: string;
 }
 
 const Cards: React.FC<CardProps> = ({ product, storeId }) => {
-	const { likedItems, addToCart, toggleLike, cartItems } = useStore()
-	const isLiked = likedItems.some(
-		(item: { id: string }) => item.id === product.id
-	)
-	const isInCart = cartItems.some(
-		(item: { id: string }) => item.id === product.id
-	)
-	const router = useRouter()
+  const { likedItems, addToCart, toggleLike, cartItems } = useStore();
+  const isLiked = likedItems.some(
+    (item: { id: string }) => item.id === product.id
+  );
+  const isInCart = cartItems.some((item: { id: string }) => item.id === product.id);
+  const router = useRouter();
 
-	const handleProductClick = (event: any) => {
-		event.preventDefault() // Prevents default navigation behavior
-		router.push(
-			`/store/${storeId}/product/${product.id}?categoryId=${product.catalogueCategoryId}`
-		) // ✅ Correct way to navigate
-	}
+  const handleProductClick = (event: any) => {
+    event.preventDefault(); // Prevents default navigation behavior
+    router.push(
+      `/store/${storeId}/product/${product.id}?categoryId=${product.catalogueCategoryId}`
+    ); // ✅ Correct way to navigate
+  };
 
-	return (
-		<div className="flex flex-wrap justify-center gap-4 p-10 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl border-cyan-400">
-			{/* Card structure remains the same */}
+  const handleAddToCart = async () => {
+    // Get user data from localStorage
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!user?.uid) {
+      toast.error("Please log in to add to cart.");
+      return;
+    }
 
-			<div className="w-80 h-[400px] bg-gradient-to-br from-red-900200 to-blue-300 rounded-3xl shadow-2xl p-5 relative overflow-hidden transform transition duration-500 hover:scale-105 flex flex-col border-cyan-600">
-				<a
-					href={`/store/product/${product.id}?categoryId=${product.categoryId}`} // Improves SEO
-					onClick={handleProductClick}
-					className="block relative rounded-2xl overflow-hidden"
-				>
-					<img
-						className="w-full h-40 object-cover transition-transform transform hover:rotate-2 hover:scale-110 rounded-lg"
-						src={product.productImageUrl || "/default-image.jpg"}
-						alt={product.catalogueProductName}
-					/>
-				</a>
+    if (!product) {
+      toast.error("No product details available.");
+      return;
+    }
 
-				<div className="text-center mt-4 flex-grow flex flex-col justify-between">
-					<h5 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-500 hover:scale-105 transform transition">
-						{product.catalogueProductName}
-					</h5>
-					<p className="text-gray-700 text-sm mt-2 font-medium px-2 line-clamp-2">
-						{product.productDescription ||
-							"Awesome product, check it out!"}
-					</p>
+    try {
+      // Add the product to the cart state
+      addToCart(product); // This will update the global state for the cart
 
-					<div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4 w-full">
-						<button
-							onClick={() => addToCart(product)}
-							className={`px-4 py-2 ${
-								isInCart ? "bg-red-600" : "bg-blue-600"
-							} text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2 transform hover:scale-110 transition-all`}
-						>
-							{isInCart ? (
-								<>
-									<BsCartDash className="text-2xl" />
-									<span className="hidden lg:inline">
-										Remove from Cart
-									</span>
-								</>
-							) : (
-								<>
-									<BsCartPlus className="text-2xl" />
-									<span className="hidden lg:inline">
-										Add to Cart
-									</span>
-								</>
-							)}
-						</button>
+      // Add the product to Firestore's "Carts" collection
+      const cartRef = doc(db, "Carts", `${user.uid}`);
+      await setDoc(cartRef, {
+        userID: user.uid,
+        storeID: storeId,
+        categoryID: product.catalogueCategoryId,
+        productID: product.id,
+        productName: product.catalogueProductName,
+        productImageUrl: product.productImageUrl || "/default-image.jpg",
+        quantity: 1, // Assuming the user is adding 1 item to the cart
+      });
 
-						<button
-							onClick={() => toggleLike(product)}
-							className={`p-2 rounded-full shadow-md transition-all duration-300 ${
-								isLiked
-									? "text-red-500  scale-105"
-									: "text-gray-400 hover:text-red-500 "
-							}`}
-						>
-							{isLiked ? (
-								<FaHeart className="text-2xl" /> // Filled heart
-							) : (
-								<FiHeart className="text-2xl" /> // Outline heart
-							)}
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	)
-}
+      toast.success("Product added to cart!");
+    } catch (error) {
+      console.error("Error adding product to cart:", error);
+      toast.error("Failed to add product to cart. Please try again.");
+    }
+  };
 
-export default Cards
+  return (
+    <div className="flex flex-wrap justify-center gap-4 p-10 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl border-cyan-400">
+      <div className="w-80 h-[400px] bg-gradient-to-br from-red-900200 to-blue-300 rounded-3xl shadow-2xl p-5 relative overflow-hidden transform transition duration-500 hover:scale-105 flex flex-col border-cyan-600">
+        <a
+          href={`/store/product/${product.id}?categoryId=${product.categoryId}`}
+          onClick={handleProductClick}
+          className="block relative rounded-2xl overflow-hidden"
+        >
+          <img
+            className="w-full h-40 object-cover transition-transform transform hover:rotate-2 hover:scale-110 rounded-lg"
+            src={product.productImageUrl || "/default-image.jpg"}
+            alt={product.catalogueProductName}
+          />
+        </a>
+
+        <div className="text-center mt-4 flex-grow flex flex-col justify-between">
+          <h5 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-500 hover:scale-105 transform transition">
+            {product.catalogueProductName}
+          </h5>
+          <p className="text-gray-700 text-sm mt-2 font-medium px-2 line-clamp-2">
+            {product.productDescription || "Awesome product, check it out!"}
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4 w-full">
+            <button
+              onClick={handleAddToCart}
+              className={`px-4 py-2 ${isInCart ? "bg-red-600" : "bg-blue-600"} text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2 transform hover:scale-110 transition-all`}
+            >
+              {isInCart ? (
+                <>
+                  <BsCartDash className="text-2xl" />
+                  <span className="hidden lg:inline">Remove from Cart</span>
+                </>
+              ) : (
+                <>
+                  <BsCartPlus className="text-2xl" />
+                  <span className="hidden lg:inline">Add to Cart</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => toggleLike(product)}
+              className={`p-2 rounded-full shadow-md transition-all duration-300 ${
+                isLiked ? "text-red-500  scale-105" : "text-gray-400 hover:text-red-500 "
+              }`}
+            >
+              {isLiked ? (
+                <FaHeart className="text-2xl" /> // Filled heart
+              ) : (
+                <FiHeart className="text-2xl" /> // Outline heart
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Cards;
