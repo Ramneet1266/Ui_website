@@ -1,114 +1,54 @@
-// "use client";
+"use client"
 
-// import Navbar from "../app/component/Navbar";
-// import "./globals.css";
-// import "slick-carousel/slick/slick.css";
-// import "slick-carousel/slick/slick-theme.css";
-// import Footer from "../app/component/Footer";
-// import { StoreProvider } from "./context/StoreContext";
-// import { useEffect, useState } from "react";
-// import { usePathname, useRouter } from "next/navigation";
-// import { auth } from "@/app/lib/firebase"; 
-// import { onAuthStateChanged } from "firebase/auth";
-
-// export default function RootLayout({
-//   children,
-// }: Readonly<{ children: React.ReactNode }>) {
-//   const pathname = usePathname();
-//   const router = useRouter();
-//   const [isAuthenticated, setIsAuthenticated] = useState(false);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       setIsAuthenticated(!!user);
-//       setLoading(false);
-
-//       // Redirect to LoginPage if not authenticated
-//       if (!user && pathname !== "/LoginPage") {
-//         router.push("/LoginPage");
-//       }
-//     });
-
-//     return () => unsubscribe();
-//   }, [pathname, router]);
-
-//   const showNavbar = isAuthenticated && pathname !== "/LoginPage";
-
-//   if (loading) return <div>Loading...</div>;
-
-//   return (
-// 	<html lang="en">
-// 		<body>
-// 			<StoreProvider>
-// 			{showNavbar && <Navbar />}
-// 			<main>{children}</main>
-// 			<Footer />
-// 			</StoreProvider>
-// 		</body>
-// 	</html>
-//   );
-// }
-
-
-
-"use client";
-
-import Navbar from "../app/component/Navbar";
-import "./globals.css";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import Footer from "../app/component/Footer";
-import { StoreProvider } from "./context/StoreContext";
-import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { auth } from "@/app/lib/firebase"; 
-import { onAuthStateChanged } from "firebase/auth";
+import { useState, useEffect } from "react"
+import Navbar from "../app/component/Navbar"
+import "./globals.css"
+import "slick-carousel/slick/slick.css"
+import "slick-carousel/slick/slick-theme.css"
+import Footer from "../app/component/Footer"
+import { StoreProvider } from "./context/StoreContext"
+import { auth } from "@/app/lib/firebase"
+import { ToastContainer } from "react-toastify"
+import LoginPage from "./LoginPage/page"
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+	const [isAuthenticated, setIsAuthenticated] =
+		useState<boolean>(false)
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
-      setLoading(false);
+	// Check the user authentication state on mount
+	useEffect(() => {
+		// Check if the user is in localStorage
+		const storedUser = localStorage.getItem("user")
+		if (storedUser) {
+			setIsAuthenticated(true)
+		} else {
+			const unsubscribe = auth.onAuthStateChanged((user) => {
+				setIsAuthenticated(!!user) // Update state based on user
+			})
 
-      // Handle both cases
-      if (user) {
-        // Redirect away from LoginPage if authenticated
-        if (pathname === "/LoginPage") {
-          router.push("/");
-        }
-      } else {
-        // Redirect to LoginPage if not authenticated
-        if (pathname !== "/LoginPage") {
-          router.push("/LoginPage");
-        }
-      }
-    });
+			// Cleanup subscription on unmount
+			return () => unsubscribe()
+		}
+	}, [])
 
-    return () => unsubscribe();
-  }, [pathname, router]);
-
-  const showNavbar = isAuthenticated && pathname !== "/LoginPage";
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <html lang="en">
-      <body>
-        <StoreProvider>
-          {showNavbar && <Navbar />}
-          <main>{children}</main>
-          {/* Optional: Conditionally render Footer too */}
-          {showNavbar && <Footer />}
-        </StoreProvider>
-      </body>
-    </html>
-  );
+	return (
+		<html lang="en">
+			<body>
+				<ToastContainer autoClose={3000} position="top-right" />
+				<StoreProvider>
+					{isAuthenticated ? (
+						<>
+							<Navbar />
+							<main>{children}</main>
+							<Footer />
+						</>
+					) : (
+						<LoginPage />
+					)}
+				</StoreProvider>
+			</body>
+		</html>
+	)
 }
