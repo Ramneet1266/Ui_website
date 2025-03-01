@@ -1,32 +1,67 @@
 "use client"
-import React from "react"
+import React, { useState } from "react"
 import { FiHeart } from "react-icons/fi"
 import { useRouter } from "next/navigation"
 import { FaHeart } from "react-icons/fa" // Filled heart icon
 import { BsCartPlus, BsCartDash } from "react-icons/bs"
 import { useStore } from "../context/StoreContext"
+import { collection, doc, setDoc } from "firebase/firestore"
+import { db } from "@/app/lib/firebase" // Make sure to import Firestore db
+import { toast } from "react-toastify"
+
 interface Product {
 	id: string
 	productImageUrl?: string
 	catalogueProductName: string
 	catalogueCategoryId: string
 	productDescription?: string
-	categoryId: string // ✅ Add this line
+	categoryId: string
 }
 
 interface CardProps {
 	product: Product
 	storeId: string
 }
+interface CartItem {
+	id: string;
+	name: string;
+	price: number;
+	storeId: string;
+	quantity: number;
+	productImageUrl: string;
+  }
+  
 
 const Cards: React.FC<CardProps> = ({ product, storeId }) => {
-	const { likedItems, addToCart, toggleLike, cartItems } = useStore()
+	const { likedItems, addToCart, toggleLike, cartItems,removeFromCart ,setCartItems} = useStore()
+	
+
+
+
+	const isInCart = cartItems.some((item:CartItem) => item.id === product.id);
+
+	const handleCartToggle = async () => {
+		if (isInCart) {
+		  setCartItems((prev:CartItem[]) => prev.filter((item:CartItem) => item.id !== product.id)); // Update UI instantly
+		  await removeFromCart(product.id); // Remove from backend
+		} else {
+		  const newItem = { ...product, id: product.id, quantity: 1 };
+	
+		  setCartItems((prev:CartItem[]) => [...prev, newItem]); // Optimistically update UI
+		  await addToCart(product, storeId); // Add to backend
+		}
+	  };
+
+
+
 	const isLiked = likedItems.some(
 		(item: { id: string }) => item.id === product.id
 	)
-	const isInCart = cartItems.some(
-		(item: { id: string }) => item.id === product.id
-	)
+	// const isInCart = cartItems.some(
+	// 	(item: { id: string }) => item.id=== product.id
+	// );
+	console.log("Cart Items:", cartItems);
+console.log("Checking ID:", product.id, "Found in cart?", isInCart);
 	const router = useRouter()
 
 	const handleProductClick = (event: any) => {
@@ -36,13 +71,50 @@ const Cards: React.FC<CardProps> = ({ product, storeId }) => {
 		) // ✅ Correct way to navigate
 	}
 
+	const handleAddToCart = async () => {
+		if (product) {
+			addToCart(product) // Add the product to the cart when the button is clicked
+		}
+
+		const user = JSON.parse(localStorage.getItem("user") || "{}")
+
+		if (!user?.uid) {
+			toast.error("Please log in to add to cart.")
+			return
+		}
+
+		if (!product) {
+			toast.error("No product details available.")
+			return
+		}
+
+		try {
+			const cartRef = doc(db, "Carts", `${user.uid}`) // Reference to the user's cart document
+			const productsRef = collection(cartRef, "products") // Create a sub-collection called 'products' under the user's cart
+
+			// Add the product to the user's cart in the 'products' sub-collection
+			const productRef = doc(productsRef, product.id) // Using productId as document ID
+			await setDoc(productRef, {
+				productID: product.id,
+				productName: product.catalogueProductName,
+				productImageUrl: product.productImageUrl,
+				quantity: 1,
+				price: 360, // You can modify this if the price changes dynamically
+			})
+
+			addToCart(product) // Update the global cart state
+			toast.success("Product added to cart!")
+		} catch (error) {
+			console.error("Error adding product to cart:", error)
+			toast.error("Failed to add product to cart. Please try again.")
+		}
+	}
+
 	return (
 		<div className="flex flex-wrap justify-center gap-4 p-10 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl border-cyan-400">
-			{/* Card structure remains the same */}
-
 			<div className="w-80 h-[400px] bg-gradient-to-br from-red-900200 to-blue-300 rounded-3xl shadow-2xl p-5 relative overflow-hidden transform transition duration-500 hover:scale-105 flex flex-col border-cyan-600">
 				<a
-					href={`/store/product/${product.id}?categoryId=${product.categoryId}`} // Improves SEO
+					href={`/store/product/${product.id}?categoryId=${product.categoryId}`}
 					onClick={handleProductClick}
 					className="block relative rounded-2xl overflow-hidden"
 				>
@@ -63,41 +135,38 @@ const Cards: React.FC<CardProps> = ({ product, storeId }) => {
 					</p>
 
 					<div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4 w-full">
-						<button
-							onClick={() => addToCart(product)}
-							className={`px-4 py-2 ${
-								isInCart ? "bg-red-600" : "bg-blue-600"
-							} text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2 transform hover:scale-110 transition-all`}
+					<button
+						onClick={handleCartToggle}
+						className={`px-4 py-2 ${
+							cartItems.some((item:CartItem) => item.id === product.id)  ? "bg-red-600" : "bg-blue-600"
+						} text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2 transform hover:scale-110 transition-all`}
 						>
-							{isInCart ? (
-								<>
-									<BsCartDash className="text-2xl" />
-									<span className="hidden lg:inline">
-										Remove from Cart
-									</span>
-								</>
-							) : (
-								<>
-									<BsCartPlus className="text-2xl" />
-									<span className="hidden lg:inline">
-										Add to Cart
-									</span>
-								</>
-							)}
+						{ isInCart? (
+							<>
+							<BsCartDash className="text-2xl" />
+							<span className="hidden lg:inline">Remove from Cart</span>
+							</>
+						) : (
+							<>
+							<BsCartPlus className="text-2xl" />
+							<span className="hidden lg:inline">Add to Cart</span>
+							</>
+						)}
 						</button>
+
 
 						<button
 							onClick={() => toggleLike(product)}
 							className={`p-2 rounded-full shadow-md transition-all duration-300 ${
 								isLiked
-									? "text-red-500  scale-105"
-									: "text-gray-400 hover:text-red-500 "
+									? "text-red-500 scale-105"
+									: "text-gray-400 hover:text-red-500"
 							}`}
 						>
 							{isLiked ? (
-								<FaHeart className="text-2xl" /> // Filled heart
+								<FaHeart className="text-2xl" />
 							) : (
-								<FiHeart className="text-2xl" /> // Outline heart
+								<FiHeart className="text-2xl" />
 							)}
 						</button>
 					</div>

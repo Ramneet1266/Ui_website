@@ -5,9 +5,10 @@ import { FiHeart } from "react-icons/fi"
 import { BsCartPlus, BsCartPlusFill } from "react-icons/bs"
 import React, { useState } from "react"
 import { useStore } from "../context/StoreContext"
-import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import { auth } from "@/app/lib/firebase";
+import { useRouter } from "next/navigation"
+import { signOut } from "firebase/auth"
+import { auth } from "@/app/lib/firebase"
+import { toast } from "react-toastify"
 const Navbar = () => {
 	const { likedItems, cartItems } = useStore()
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -15,12 +16,13 @@ const Navbar = () => {
 	const toggleDropdown = () => {
 		setIsDropdownOpen(!isDropdownOpen)
 	}
-	const router = useRouter();
+	const router = useRouter()
 
 	const handleLogout = async () => {
-		await signOut(auth); // Firebase logout
-		router.push("/LoginPage"); // Redirect to login
-	};
+		await signOut(auth) // Firebase logout
+		toast.success("Logout Successfull!!")
+		router.push("/LoginPage") // Redirect to login
+	}
 
 	return (
 		<nav className="bg-pink-400 border-b border-gray-300 fixed top-0 left-0 w-full z-50">
