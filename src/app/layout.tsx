@@ -10,7 +10,6 @@ import { StoreProvider } from "./context/StoreContext"
 import { auth } from "@/app/lib/firebase"
 import { ToastContainer } from "react-toastify"
 import LoginPage from "./LoginPage/page"
-
 export default function RootLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {

@@ -18,8 +18,10 @@ export default function LoginPage() {
 	const [error, setError] = useState("")
 	const router = useRouter()
 
-	const handleLogin = async (e: React.FormEvent) => {
+	const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
+		console.log("handleLogin function triggered") // Debugging
+
 		setError("")
 
 		if (!email || !password) {
@@ -28,26 +30,34 @@ export default function LoginPage() {
 		}
 
 		try {
+			console.log("Attempting login...") // Debugging
 			const userCredential = await signInWithEmailAndPassword(
 				auth,
 				email,
 				password
 			)
+			console.log("Login successful!") // Debugging
+
 			toast.success("Login Successful!!")
 
-			// Store user data in localStorage
 			const user = userCredential.user
 			localStorage.setItem(
 				"user",
 				JSON.stringify({
 					uid: user.uid,
 					email: user.email,
-					name: user.displayName || "Anonymous", // You can adjust this as per your needs
+					name: user.displayName || "Anonymous",
 				})
 			)
 
-			router.replace("/")
+			console.log("Navigating to /LoginPage...") // Debugging
+			router.push("/LoginPage") // Correct navigation
+
+			setTimeout(() => {
+				window.location.href = "/LoginPage"
+			}, 500) // Fallback in case push doesn't work
 		} catch (error: any) {
+			console.log("Login failed:", error) // Debugging
 			setError("Invalid email or password.")
 			toast.error("Login Failed!!")
 		}

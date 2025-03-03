@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation"
 import { FaHeart } from "react-icons/fa" // Filled heart icon
 import { BsCartPlus, BsCartDash } from "react-icons/bs"
 import { useStore } from "../context/StoreContext"
-import { collection, doc, setDoc } from "firebase/firestore"
+import {
+	collection,
+	deleteDoc,
+	doc,
+	setDoc,
+} from "firebase/firestore"
 import { db } from "@/app/lib/firebase" // Make sure to import Firestore db
 import { toast } from "react-toastify"
 
@@ -24,7 +29,13 @@ interface CardProps {
 }
 
 const Cards: React.FC<CardProps> = ({ product, storeId }) => {
-	const { likedItems, addToCart, toggleLike, cartItems } = useStore()
+	const {
+		likedItems,
+		addToCart,
+		toggleLike,
+		cartItems,
+		removeFromCart,
+	} = useStore()
 	const isLiked = likedItems.some(
 		(item: { id: string }) => item.id === product.id
 	)
@@ -41,8 +52,9 @@ const Cards: React.FC<CardProps> = ({ product, storeId }) => {
 	}
 
 	const handleAddToCart = async () => {
-		if (product) {
-			addToCart(product) // Add the product to the cart when the button is clicked
+		if (!product) {
+			toast.error("No product details available.")
+			return
 		}
 
 		const user = JSON.parse(localStorage.getItem("user") || "{}")
@@ -52,30 +64,31 @@ const Cards: React.FC<CardProps> = ({ product, storeId }) => {
 			return
 		}
 
-		if (!product) {
-			toast.error("No product details available.")
-			return
-		}
-
 		try {
-			const cartRef = doc(db, "Carts", `${user.uid}`) // Reference to the user's cart document
-			const productsRef = collection(cartRef, "products") // Create a sub-collection called 'products' under the user's cart
+			const cartRef = doc(db, "Carts", `${user.uid}`)
+			const productRef = doc(cartRef, "products", product.id)
+			if (isInCart) {
+				// Remove item from Firestore and update state
+				await deleteDoc(productRef)
+				removeFromCart(product.id) // Update state immediately
+				toast.success("Product removed from cart!")
+			} else {
+				// Add product to Firestore and update state
+				await setDoc(productRef, {
+					productID: product.id,
+					productName: product.catalogueProductName,
+					productImageUrl: product.productImageUrl,
+					quantity: 1,
+					price: 360, // Dynamic pricing can be implemented
+				})
+				toast.success("Product added to cart!")
 
-			// Add the product to the user's cart in the 'products' sub-collection
-			const productRef = doc(productsRef, product.id) // Using productId as document ID
-			await setDoc(productRef, {
-				productID: product.id,
-				productName: product.catalogueProductName,
-				productImageUrl: product.productImageUrl,
-				quantity: 1,
-				price: 360, // You can modify this if the price changes dynamically
-			})
-
-			addToCart(product) // Update the global cart state
-			toast.success("Product added to cart!")
+				// Update global state to reflect addition
+				addToCart(product, true) // Pass 'true' to indicate addition
+			}
 		} catch (error) {
-			console.error("Error adding product to cart:", error)
-			toast.error("Failed to add product to cart. Please try again.")
+			console.error("Error updating cart:", error)
+			toast.error("Failed to update cart. Please try again.")
 		}
 	}
 
