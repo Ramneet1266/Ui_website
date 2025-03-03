@@ -5,6 +5,7 @@ import { useStore } from "../../context/StoreContext";
 import Image from "next/image";
 import { db } from "../../lib/firebase"; // Adjust Firebase import
 import { collection, addDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 interface Product {
   id: string;
@@ -38,11 +39,24 @@ const CartPage = () => {
   );
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
+
   const handlePlaceOrder = async () => {
     try {
+      const auth = getAuth(); // Get auth instance
+      const user = auth.currentUser;
+
+      if (!user) {
+        alert("You must be logged in to place an order.");
+        return;
+      }
+
+
       // Step 1: Create order document
       const orderRef = await addDoc(collection(db, "Orders"), {
         createdAt: serverTimestamp(),
+
+        userId:user.uid,
+
       });
   
       const orderID = orderRef.id;
