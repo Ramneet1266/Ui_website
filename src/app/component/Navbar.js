@@ -3,7 +3,7 @@ import Link from "next/link"
 import { FaHeart } from "react-icons/fa"
 import { FiHeart } from "react-icons/fi"
 import { BsCartPlus, BsCartPlusFill } from "react-icons/bs"
-import React, { useState } from "react"
+import React, { useState,useRef,useEffect } from "react"
 import { useStore } from "../context/StoreContext"
 import { useRouter } from "next/navigation"
 import { signOut } from "firebase/auth"
@@ -12,6 +12,22 @@ import { toast } from "react-toastify"
 const Navbar = () => {
 	const { likedItems, cartItems } = useStore()
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+	const dropdownRef = useRef(null); // Ref for dropdown container
+	 // Function to handle outside clicks
+	 useEffect(() => {
+		function handleClickOutside(event) {
+		  if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+			setIsDropdownOpen(false); // Close dropdown if clicked outside
+		  }
+		}
+		if (isDropdownOpen) {
+			document.addEventListener("mousedown", handleClickOutside);
+		  }
+		  return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		  };
+		}, [isDropdownOpen]);
+	  
 
 	const toggleDropdown = () => {
 		setIsDropdownOpen(!isDropdownOpen)
@@ -85,11 +101,11 @@ const Navbar = () => {
 					</Link>
 
 					{/* Profile Section */}
-					<div className="relative">
+					<div className="relative" ref={dropdownRef}>
 						<button
 							type="button"
 							className="flex items-center justify-center text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-blue-600"
-							onClick={toggleDropdown}
+							onClick={()=>setIsDropdownOpen(!isDropdownOpen)}
 						>
 							<span className="sr-only">Open user menu</span>
 							<img

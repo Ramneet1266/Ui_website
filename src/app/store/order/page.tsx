@@ -1,8 +1,10 @@
+"use client";
+
 import React from "react"
 
 export default function page() {
 	return (
-		<div className="custom-bg py-10 px-8 md:px-20">
+		<div className="custom-bg py-10 px-8 md:px-20 mt-10">
 			<div>
 				<h3 className="text-white font-bold text-3xl md:text-5xl">
 					Featured Products
