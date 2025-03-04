@@ -31,7 +31,10 @@ const CartPage = () => {
 
   // Convert "$100" to a number (100)
   // const parsePrice = (price: string) => Number(price.replace(/[^0-9.-]+/g, ""));
-  const parsePrice = (price?: string) =>Number( price ? price.replace("$", "").trim() : "0");
+  const parsePrice = (price?: string | number) => 
+    typeof price === "string" ? Number(price.replace("$", "").trim()) : price || 0;
+  
+  // const parsePrice = (price?: string) =>Number( price ? price.replace("$", "").trim() : "0");
 
   // Calculate totals
   const subtotal = cartItems.reduce(

@@ -12,12 +12,12 @@ import { BsCartDash, BsCartPlus } from "react-icons/bs"
 interface Product {
 	id: string;
 	price:string; // Price is stored as a string, e.g., "$100"
-	stock:string;
-	
 	catalogueProductName: string;
 	catalogueCategoryName:string;
+	catalogueCategoryId:string,
 	productImageUrl: string;
 	productDescription: string;
+	stock:string;
 	
 }
 interface CartItem {
@@ -27,14 +27,16 @@ interface CartItem {
 	storeId: string;
 	quantity: number;
 	productImageUrl: string;
+
+	productDescription:string;
+	CategoryName:string;
+	CategoryId:string;
   }
 
 export default function Page(){
 	const params = useParams(); // Unwrap the params
 	const { storeId, productId } = params as { storeId: string; productId: string };
 	const { selectedProduct } = useStore();
-
-	
 	const searchParams = useSearchParams()
 	const categoryId = searchParams.get("categoryId")
 	const { addToCart, cartItems,removeFromCart ,setCartItems,updateCartQuantity} = useStore()
@@ -53,20 +55,19 @@ useEffect(() => {
     setLoading(false);
     return; // Skip Firebase fetch
   }
-
   // Fetch product if not in context
-  const fetchProduct = async () => {
-    try {
-      const productData = await getProductById(storeId, categoryId, productId);
-      setProduct(productData);
-    } catch (error) {
-      console.error("Error fetching product:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+//   const fetchProduct = async () => {
+//     try {
+//       const productData = await getProductById(storeId, categoryId, productId);
+//       setProduct(productData);
+//     } catch (error) {
+//       console.error("Error fetching product:", error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  fetchProduct();
+//   fetchProduct();
 }, [storeId, categoryId, productId, router, selectedProduct]);
 
 	const handleIncreaseQuantity = () => {
@@ -101,7 +102,6 @@ useEffect(() => {
 		try {
 			 // Reference to the "Orders" collection
 			 const ordersCollectionRef = collection(db, "Orders")
-
 			 // Add order details and let Firebase generate the order ID
 			 const orderRef = await addDoc(ordersCollectionRef, {
 				 userID: user.uid,
@@ -111,11 +111,8 @@ useEffect(() => {
 			
         // Use the generated order ID for further actions
         const orderId = orderRef.id
-
         // Reference to store sub-collection in the order
         const storeRef = doc(db, "Orders", orderId, "stores", storeId)
-
-	
 			
 			// Add product under the store
 			const productRef = doc(storeRef, "products", productId)
@@ -136,35 +133,6 @@ useEffect(() => {
 			toast.error("Failed to place order. Please try again.")
 		}
 	}
-
-	// const handleCartToggle = async () => {
-	// 	if (!product.id || !product.catalogueProductName || !product.price || !product.productImageUrl) {
-	// 		console.error("Missing required product fields:", product);
-	// 		return;
-	// 	}
-	
-	// 	const parsedPrice =
-	// 		typeof product.price === "string"
-	// 			? parseFloat(product.price.replace("$", ""))
-	// 			: product.price || 0; // Ensure price is a number
-	
-	// 	if (isInCart) {
-	// 		setCartItems((prev: CartItem[]) => prev.filter((item: CartItem) => item.id !== product.id)); // Update UI instantly
-	// 		await removeFromCart(product.id); // Remove from backend
-	// 	} else {
-	// 		const newItem = { 
-	// 			id: product.id,
-	// 			name: product.catalogueProductName, 
-	// 			price: parsedPrice,
-	// 			storeId, 
-	// 			quantity: 1, // Default to 1
-	// 			productImageUrl: product.productImageUrl
-	// 		};
-	
-	// 		setCartItems((prev: CartItem[]) => [...prev, newItem]); // Optimistically update UI
-	// 		await addToCart(newItem, storeId); // Add to backend
-	// 	}
-	// };
 	
 	const handleCartToggle = async () => {
 		if (!product|| !product.id || !product.catalogueProductName || !product.price || !product.productImageUrl) {
@@ -183,11 +151,16 @@ useEffect(() => {
 	
 		const newItem = { 
 			id: product.id,
-			name: product.catalogueProductName, 
-			price:product.price||0 ,
+			catalogueProductName: product.catalogueProductName,
+			price:product.price,
 			storeId:storeId, 
-			quantity: 1, 
-			productImageUrl: product.productImageUrl
+			quantity: quantity||1, 
+			productImageUrl: product.productImageUrl,
+			productDescription:product.productDescription,
+			catalogueCategoryId:product.catalogueCategoryId,
+			catalogueCategoryName:product.catalogueCategoryName
+
+
 		};
 	
 		if (isInCart) {
@@ -195,7 +168,7 @@ useEffect(() => {
 			await removeFromCart(product.id);
 		} else {
 			setCartItems((prev: CartItem[]) => [...prev, newItem]);
-			await addToCart(newItem, storeId);
+			await addToCart(newItem, storeId,newItem.quantity);
 		}
 	};
 	

@@ -11,11 +11,12 @@ import { toast } from "react-toastify"
 
 interface Product {
 	id: string
+	price:string
 	productImageUrl?: string
 	catalogueProductName: string
 	catalogueCategoryId: string
 	productDescription?: string
-	categoryId: string
+	stock:string
 }
 
 interface CardProps {
@@ -29,6 +30,9 @@ interface CartItem {
 	storeId: string;
 	quantity: number;
 	productImageUrl: string;
+	productDescription:string;
+	CategoryName:string;
+	CategoryId:string;
   }
   
 const Cards: React.FC<CardProps> = ({ product, storeId }) => {
@@ -63,53 +67,14 @@ console.log("Checking ID:", product.id, "Found in cart?", isInCart);
 		setSelectedProduct(product);
 		router.push(
 			`/store/${storeId}/product/${product.id}?categoryId=${product.catalogueCategoryId}`);
-		//  Correct way to navigate
 	};
 
-	const handleAddToCart = async () => {
-		if (product) {
-			addToCart(product) // Add the product to the cart when the button is clicked
-		}
-
-		const user = JSON.parse(localStorage.getItem("user") || "{}")
-
-		if (!user?.uid) {
-			toast.error("Please log in to add to cart.")
-			return
-		}
-
-		if (!product) {
-			toast.error("No product details available.")
-			return
-		}
-
-		try {
-			const cartRef = doc(db, "Carts", `${user.uid}`) // Reference to the user's cart document
-			const productsRef = collection(cartRef, "products") // Create a sub-collection called 'products' under the user's cart
-
-			// Add the product to the user's cart in the 'products' sub-collection
-			const productRef = doc(productsRef, product.id) // Using productId as document ID
-			await setDoc(productRef, {
-				productID: product.id,
-				productName: product.catalogueProductName,
-				productImageUrl: product.productImageUrl,
-				quantity: 1,
-				price: 360, // You can modify this if the price changes dynamically
-			})
-
-			addToCart(product) // Update the global cart state
-			toast.success("Product added to cart!")
-		} catch (error) {
-			console.error("Error adding product to cart:", error)
-			toast.error("Failed to add product to cart. Please try again.")
-		}
-	}
-
+	
 	return (
 		<div className="flex flex-wrap justify-center gap-4 p-10 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl border-cyan-400">
 			<div className="w-80 h-[400px] bg-gradient-to-br from-red-900200 to-blue-300 rounded-3xl shadow-2xl p-5 relative overflow-hidden transform transition duration-500 hover:scale-105 flex flex-col border-cyan-600">
 				<a
-					href={`/store/product/${product.id}?categoryId=${product.categoryId}`}
+					href={`/store/product/${product.id}?categoryId=${product.catalogueCategoryId}`}
 					onClick={handleProductClick}
 					className="block relative rounded-2xl overflow-hidden"
 				>
