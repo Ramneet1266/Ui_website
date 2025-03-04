@@ -116,13 +116,14 @@ const CartPage = () => {
       <h1 className="text-3xl  py-2 text-white mt-14 bg-black text-center fixed w-full z-20 font-bold mb-8">Your Shopping Cart 🛒</h1>
 
       {cartItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center mt-14">
+        <div className="flex flex-col items-center justify-center mt-32 ">
           <Image
             src="/images/emptyCart.jpg"
             alt="Empty Cart"
-            width={400}
-            height={300}
+            width={300}
+            height={400}
             priority
+            style={{ width: "auto", height: "auto" }}
             className="max-w-xs md:max-w-md mb-8"
           />
           <p className="text-gray-600 text-lg mb-4">

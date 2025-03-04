@@ -11,7 +11,8 @@ import { useRouter } from "next/navigation";
 interface Product {
   id: string;
   storeId: string; // Add storeId here
-
+  stock:string,
+  price:string,
   productImageUrl?: string;
   catalogueProductName: string;
   catalogueCategoryId: string; // Add this
