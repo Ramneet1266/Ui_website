@@ -6,6 +6,7 @@ import Image from "next/image";
 import { db } from "../../lib/firebase"; // Adjust Firebase import
 import { collection, addDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { BsCart, BsCartDash, BsCartXFill } from "react-icons/bs";
 
 interface Product {
   id: string;
@@ -109,10 +110,10 @@ const CartPage = () => {
   
   return (
     <div className="container mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8">Your Shopping Cart 🛒</h1>
+      <h1 className="text-3xl  py-2 text-white mt-14 bg-black text-center fixed w-full z-20 font-bold mb-8">Your Shopping Cart 🛒</h1>
 
       {cartItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center mt-12">
+        <div className="flex flex-col items-center justify-center mt-14">
           <Image
             src="/images/emptyCart.jpg"
             alt="Empty Cart"
@@ -125,20 +126,20 @@ const CartPage = () => {
             Your cart is ready for amazing finds!
           </p>
           <button
-            onClick={() => router.push("/store")}
+            onClick={() => router.push("/")}
             className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
           >
             {isMounted && <span>← Continue Exploring</span>}
           </button>
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 mt-32">
           {/* Cart Items */}
-          <div className="lg:w-2/3 space-y-6">
+          <div className="lg:w-2/3 space-y-6 ">
             {cartItems.map((product: Product) => (
               <div
                 key={product.id}
-                className="flex items-center bg-white p-4 rounded-lg shadow-md"
+                className="flex  bg-white p-4 rounded-lg shadow-md "
               >
                 <Image
                   src={product.productImageUrl}
@@ -147,12 +148,13 @@ const CartPage = () => {
                   height={100}
                   className="w-24 h-24 object-cover rounded-lg"
                 />
-                <div className="ml-6 flex-1">
+                <div className="flex items-center lg:w-full">
+                <div className="ml-6 flex-1  items-center">
                   <h3 className="text-xl font-semibold">
-                    {product.catalogueProductName}
+                    {product.name}
                   </h3>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center space-x-4">
+                  <div className="flex items-center justify-between mt-2 ">
+                    <div className="flex items-center space-x-4 ">
                       <button
                         onClick={() =>
                           updateCartQuantity(product.id, product.quantity - 1)
@@ -177,12 +179,15 @@ const CartPage = () => {
                     </p>
                   </div>
                 </div>
+                </div>
+                <div>
                 <button
                   onClick={() => removeFromCart(product.id)}
-                  className="ml-4 text-red-500 hover:text-red-700"
+                  className="ml-10   text-m text-red-500  p-1 rounded-full border-red-600  hover: opacity-6"
                 >
-                  ❌
+                  <BsCartXFill/>
                 </button>
+                </div>
               </div>
             ))}
           </div>

@@ -1,148 +1,204 @@
 "use client"
 import React, { useEffect, useState } from "react"
 import { ArrowRight, Star, Minus, Plus } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { getProductById } from "@/app/component/firebaseUtil"
 import { useStore } from "..//..//..//..//context/StoreContext"
 import { toast } from "react-toastify"
-import { collection, doc, setDoc } from "firebase/firestore"
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore"
 import { db } from "@/app/lib/firebase"
+import { BsCartDash, BsCartPlus } from "react-icons/bs"
 
 interface Product {
-	id: string
-	catalogueProductName: string
-	productImageUrl: string
-	productDescription: string
+	id: string;
+	price:string; // Price is stored as a string, e.g., "$100"
+	stock:string;
+	
+	catalogueProductName: string;
+	catalogueCategoryName:string;
+	productImageUrl: string;
+	productDescription: string;
+	
 }
+interface CartItem {
+	id: string;
+	name: string;
+	price: number;
+	storeId: string;
+	quantity: number;
+	productImageUrl: string;
+  }
 
-export default function Page({
-	params,
-}: {
-	params: { storeId: string; productId: string }
-}) {
-	const { storeId, productId } = params
+export default function Page(){
+	const params = useParams(); // Unwrap the params
+	const { storeId, productId } = params as { storeId: string; productId: string };
+	const { selectedProduct } = useStore();
+
+	
 	const searchParams = useSearchParams()
 	const categoryId = searchParams.get("categoryId")
+	const { addToCart, cartItems,removeFromCart ,setCartItems,updateCartQuantity} = useStore()
+	const isInCart = cartItems.some((item:CartItem) => item.id === productId);
+	const [product, setProduct] = useState<Product | null>(null)
+	const [loading, setLoading] = useState(true)
+	const [quantity, setQuantity] = useState(1);
 
+	const router = useRouter()
+
+
+useEffect(() => {
+  // Check if selectedProduct matches the current productId
+  if (selectedProduct?.id === productId) {
+    setProduct(selectedProduct);
+    setLoading(false);
+    return; // Skip Firebase fetch
+  }
+
+  // Fetch product if not in context
+  const fetchProduct = async () => {
+    try {
+      const productData = await getProductById(storeId, categoryId, productId);
+      setProduct(productData);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProduct();
+}, [storeId, categoryId, productId, router, selectedProduct]);
+
+	const handleIncreaseQuantity = () => {
+		setQuantity(prev => prev + 1);
+	};
+	
+	const handleDecreaseQuantity = () => {
+		setQuantity(prev => (prev > 1 ? prev - 1 : 1));  // Ensure quantity is at least 1
+	};
+	
 	if (!categoryId) {
 		return <p className="p-10">Category ID is missing or invalid</p>
 	}
 
-	const [product, setProduct] = useState<Product | null>(null)
-	const [loading, setLoading] = useState(true)
-	const router = useRouter()
-	const { addToCart } = useStore()
-
-	useEffect(() => {
-		if (!storeId || !categoryId || !productId) {
-			console.error("Missing required parameters")
-			router.push("/store")
-			return
-		}
-
-		const fetchProduct = async () => {
-			try {
-				const productData = await getProductById(
-					storeId,
-					categoryId,
-					productId
-				)
-				setProduct(productData)
-			} catch (error) {
-				console.error("Error fetching product:", error)
-			} finally {
-				setLoading(false)
-			}
-		}
-
-		fetchProduct()
-	}, [storeId, categoryId, productId, router])
-
 	if (loading) return <p className="p-10">Loading...</p>
 	if (!product) return <p className="p-10">Product not found</p>
 
+
 	const handleBuyNow = async () => {
 		const user = JSON.parse(localStorage.getItem("user") || "{}")
-
+	
 		if (!user?.uid) {
 			toast.error("Please log in to place an order.")
 			return
 		}
-
+	
 		if (!product) {
 			toast.error("No product details available.")
 			return
 		}
-
+	
 		try {
-			const orderId = `${user.uid}_${productId}_${Date.now()}`
-			const orderRef = doc(db, "orders", orderId)
+			 // Reference to the "Orders" collection
+			 const ordersCollectionRef = collection(db, "Orders")
 
-			// Create a new order with user details
-			await setDoc(orderRef, {
-				userID: user.uid,
-				createdAt: new Date(),
-			})
+			 // Add order details and let Firebase generate the order ID
+			 const orderRef = await addDoc(ordersCollectionRef, {
+				 userID: user.uid,
+				 createdAt: serverTimestamp(),
+				 status: "Pending", // Example status
+			 })
+			
+        // Use the generated order ID for further actions
+        const orderId = orderRef.id
 
-			// Create a store sub-collection inside the order document (store1 is used here instead of stores)
-			const storeRef = doc(orderRef, "store1", storeId)
+        // Reference to store sub-collection in the order
+        const storeRef = doc(db, "Orders", orderId, "stores", storeId)
 
-			// Add the product to the store sub-collection
+	
+			
+			// Add product under the store
 			const productRef = doc(storeRef, "products", productId)
 			await setDoc(productRef, {
 				productID: productId,
 				productName: product.catalogueProductName,
 				productImageUrl: product.productImageUrl,
-				quantity: 1,
-				price: 360,
+				quantity: quantity,
+				price: product.price, // Use dynamic price
+				storeId: storeId,
+				
 			})
-
+	
 			toast.success("Order placed successfully!")
-			router.push("/orders") // Redirect to the orders page
+			router.push("/orders") // Redirect to Orders page
 		} catch (error) {
 			console.error("Error placing order:", error)
 			toast.error("Failed to place order. Please try again.")
 		}
 	}
 
-	const handleAddToCart = async () => {
-		if (product) {
-			addToCart(product) // Add the product to the cart when the button is clicked
+	// const handleCartToggle = async () => {
+	// 	if (!product.id || !product.catalogueProductName || !product.price || !product.productImageUrl) {
+	// 		console.error("Missing required product fields:", product);
+	// 		return;
+	// 	}
+	
+	// 	const parsedPrice =
+	// 		typeof product.price === "string"
+	// 			? parseFloat(product.price.replace("$", ""))
+	// 			: product.price || 0; // Ensure price is a number
+	
+	// 	if (isInCart) {
+	// 		setCartItems((prev: CartItem[]) => prev.filter((item: CartItem) => item.id !== product.id)); // Update UI instantly
+	// 		await removeFromCart(product.id); // Remove from backend
+	// 	} else {
+	// 		const newItem = { 
+	// 			id: product.id,
+	// 			name: product.catalogueProductName, 
+	// 			price: parsedPrice,
+	// 			storeId, 
+	// 			quantity: 1, // Default to 1
+	// 			productImageUrl: product.productImageUrl
+	// 		};
+	
+	// 		setCartItems((prev: CartItem[]) => [...prev, newItem]); // Optimistically update UI
+	// 		await addToCart(newItem, storeId); // Add to backend
+	// 	}
+	// };
+	
+	const handleCartToggle = async () => {
+		if (!product|| !product.id || !product.catalogueProductName || !product.price || !product.productImageUrl) {
+			console.error("Missing required product fields:", product);
+			return;
 		}
-
-		const user = JSON.parse(localStorage.getItem("user") || "{}")
-
-		if (!user?.uid) {
-			toast.error("Please log in to add to cart.")
-			return
+	
+		const parsedPrice = typeof product.price === "string" 
+			? parseFloat(product.price.replace("$", "")) 
+			: product.price || 0; // Ensure price is a number
+	
+		if (isNaN(parsedPrice)) {
+			console.error("Invalid price format:", product.price);
+			return;
 		}
-
-		if (!product) {
-			toast.error("No product details available.")
-			return
+	
+		const newItem = { 
+			id: product.id,
+			name: product.catalogueProductName, 
+			price:product.price||0 ,
+			storeId:storeId, 
+			quantity: 1, 
+			productImageUrl: product.productImageUrl
+		};
+	
+		if (isInCart) {
+			setCartItems((prev: CartItem[]) => prev.filter((item: CartItem) => item.id !== product.id));
+			await removeFromCart(product.id);
+		} else {
+			setCartItems((prev: CartItem[]) => [...prev, newItem]);
+			await addToCart(newItem, storeId);
 		}
-
-		try {
-			const cartRef = doc(db, "Carts", `${user.uid}`) // Reference to the user's cart document
-			const productsRef = collection(cartRef, "products") // Create a sub-collection called 'products' under the user's cart
-
-			// Add the product to the user's cart in the 'products' sub-collection
-			const productRef = doc(productsRef, productId) // Using productId as document ID
-			await setDoc(productRef, {
-				productID: productId,
-				productName: product.catalogueProductName,
-				productImageUrl: product.productImageUrl,
-				quantity: 1,
-				price: 360, // You can modify this if the price changes dynamically
-			})
-
-			addToCart(product) // Update the global cart state
-			toast.success("Product added to cart!")
-		} catch (error) {
-			console.error("Error adding product to cart:", error)
-			toast.error("Failed to add product to cart. Please try again.")
-		}
-	}
+	};
+	
 
 	return (
 		<div className="custom-bg-home text-white">
@@ -152,7 +208,9 @@ export default function Page({
 				<ArrowRight size={16} />
 				<p>Store</p>
 				<ArrowRight size={16} />
-				<p>Lorem ipsum dolor sit amet consectetur.</p>
+				<p>{product.catalogueCategoryName}</p>
+				<ArrowRight size={16} />
+				<p>{product.catalogueProductName}</p>
 			</div>
 
 			{/* Product Section */}
@@ -190,22 +248,24 @@ export default function Page({
 					</p>
 
 					<p className="mt-4 text-red-400">
-						Only <span className="font-bold">(5)</span> items left in
+						Only <span className="font-bold">({product.stock})</span> items left in
 						stock!
 					</p>
 
 					<div className="flex items-center justify-between mt-6">
-						<p className="text-3xl font-bold text-green-400">$360</p>
+						<p className="text-3xl font-bold text-green-400">{product.price}</p>
 
 						<div className="flex items-center gap-4 border border-gray-500 px-4 py-2 rounded-lg">
 							<Minus
 								size={20}
-								className="cursor-pointer text-gray-300 hover:text-white"
+								className={`cursor-pointer ${quantity === 1 ? 'text-gray-300' : 'hover:text-white'}`}
+								onClick={handleDecreaseQuantity}
 							/>
-							<p className="text-lg">1</p>
+							<p className="text-lg">{quantity}</p>
 							<Plus
 								size={20}
 								className="cursor-pointer text-gray-300 hover:text-white"
+								onClick={handleIncreaseQuantity}
 							/>
 						</div>
 					</div>
@@ -218,10 +278,19 @@ export default function Page({
 							Buy Now
 						</button>
 						<button
-							className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg text-lg font-semibold"
-							onClick={handleAddToCart}
-						>
-							Add to Cart
+							className={`${cartItems.some((item:CartItem) => item.id === product.id)  ? "bg-red-600" : "bg-blue-600"} text-white px-6 py-2 rounded-lg text-lg font-semibold flex items-center gap-2 transform hover:opacity-8 transition-all`}
+							onClick={handleCartToggle}
+						>{ isInCart? (
+													<>
+													<BsCartDash className="text-2xl" />
+													<span className="hidden lg:inline">Remove from Cart</span>
+													</>
+												) : (
+													<>
+													<BsCartPlus className="text-2xl" />
+													<span className="hidden lg:inline">Add to Cart</span>
+													</>
+												)}
 						</button>
 					</div>
 				</div>

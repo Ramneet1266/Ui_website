@@ -31,13 +31,9 @@ interface CartItem {
 	productImageUrl: string;
   }
   
-
 const Cards: React.FC<CardProps> = ({ product, storeId }) => {
 	const { likedItems, addToCart, toggleLike, cartItems,removeFromCart ,setCartItems} = useStore()
-	
-
-
-
+	const {setSelectedProduct } = useStore();
 	const isInCart = cartItems.some((item:CartItem) => item.id === product.id);
 
 	const handleCartToggle = async () => {
@@ -57,19 +53,18 @@ const Cards: React.FC<CardProps> = ({ product, storeId }) => {
 	const isLiked = likedItems.some(
 		(item: { id: string }) => item.id === product.id
 	)
-	// const isInCart = cartItems.some(
-	// 	(item: { id: string }) => item.id=== product.id
-	// );
+
 	console.log("Cart Items:", cartItems);
 console.log("Checking ID:", product.id, "Found in cart?", isInCart);
 	const router = useRouter()
 
-	const handleProductClick = (event: any) => {
+	const handleProductClick = (event:React.MouseEvent) => {
 		event.preventDefault() // Prevents default navigation behavior
+		setSelectedProduct(product);
 		router.push(
-			`/store/${storeId}/product/${product.id}?categoryId=${product.catalogueCategoryId}`
-		) // ✅ Correct way to navigate
-	}
+			`/store/${storeId}/product/${product.id}?categoryId=${product.catalogueCategoryId}`);
+		//  Correct way to navigate
+	};
 
 	const handleAddToCart = async () => {
 		if (product) {
@@ -153,8 +148,6 @@ console.log("Checking ID:", product.id, "Found in cart?", isInCart);
 							</>
 						)}
 						</button>
-
-
 						<button
 							onClick={() => toggleLike(product)}
 							className={`p-2 rounded-full shadow-md transition-all duration-300 ${
@@ -175,5 +168,4 @@ console.log("Checking ID:", product.id, "Found in cart?", isInCart);
 		</div>
 	)
 }
-
 export default Cards

@@ -109,7 +109,7 @@ export const getProductById = async (
 		if (!docSnap.exists()) {
 			throw new Error("Product not found")
 		}
-
+		const productData = docSnap.data()
 		// Return the full product data
 		return {
 			id: docSnap.id,
@@ -117,6 +117,16 @@ export const getProductById = async (
 			catalogueCategoryName: docSnap.data().catalogueCategoryName,
 			productImageUrl: docSnap.data().productImageUrl,
 			productDescription: docSnap.data().productDescription,
+			price: docSnap.data().price,
+			stock:docSnap.data().stock
+			// quantity: productData.quantity || 0,
+			// name: productData.name || "Unknown Product",
+			// storeName: productData.storeName || "Unknown Store",
+			// createdAt: productData.createdAt || null,
+			// updatedAt: productData.updatedAt || null,
+			// brand: productData.brand || "Unknown Brand",
+			// rating: productData.rating || 0,
+			// reviews: productData.reviews || [],
 		}
 	} catch (error) {
 		console.error("Error fetching product:", error)
