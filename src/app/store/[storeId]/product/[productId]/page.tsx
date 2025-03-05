@@ -114,7 +114,7 @@ useEffect(() => {
 			 const ordersCollectionRef = collection(db, "Orders")
 			 // Add order details and let Firebase generate the order ID
 			 const orderRef = await addDoc(ordersCollectionRef, {
-				 userID: user.uid,
+				 userId: user.uid,
 				 createdAt: serverTimestamp(),
 				 location:{latitude,longitude},
 				 status: "Pending", // Example status

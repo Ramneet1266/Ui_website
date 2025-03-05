@@ -67,6 +67,7 @@ const CartPage = () => {
           const orderRef = await addDoc(collection(db, "Orders"), {
             createdAt: serverTimestamp(),
             userId: user.uid,
+            status:"pending",
             location: { latitude, longitude }, // Store user location
           });
   
