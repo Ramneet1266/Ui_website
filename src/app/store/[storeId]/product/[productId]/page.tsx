@@ -98,7 +98,17 @@ useEffect(() => {
 			toast.error("No product details available.")
 			return
 		}
-	
+		
+  // Check if Geolocation is available
+  if (!navigator.geolocation) {
+    toast.error("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+
 		try {
 			 // Reference to the "Orders" collection
 			 const ordersCollectionRef = collection(db, "Orders")
@@ -106,8 +116,9 @@ useEffect(() => {
 			 const orderRef = await addDoc(ordersCollectionRef, {
 				 userID: user.uid,
 				 createdAt: serverTimestamp(),
+				 location:{latitude,longitude},
 				 status: "Pending", // Example status
-			 })
+			 });
 			
         // Use the generated order ID for further actions
         const orderId = orderRef.id
@@ -127,13 +138,22 @@ useEffect(() => {
 			})
 	
 			toast.success("Order placed successfully!")
-			router.push("/orders") // Redirect to Orders page
+			router.push("/") // Redirect to Orders page
 		} catch (error) {
 			console.error("Error placing order:", error)
 			toast.error("Failed to place order. Please try again.")
 		}
-	}
-	
+	},
+	(error) => {
+		console.error("Error getting location:", error);
+		toast.error("Failed to get location. Please enable location services.");
+	  }
+	);
+  };
+
+
+
+  
 	const handleCartToggle = async () => {
 		if (!product|| !product.id || !product.catalogueProductName || !product.price || !product.productImageUrl) {
 			console.error("Missing required product fields:", product);

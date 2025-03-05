@@ -48,63 +48,75 @@ const CartPage = () => {
     try {
       const auth = getAuth(); // Get auth instance
       const user = auth.currentUser;
-
+  
       if (!user) {
-        alert("You must be logged in to place an order.");
         return;
       }
-
-
-      // Step 1: Create order document
-      const orderRef = await addDoc(collection(db, "Orders"), {
-        createdAt: serverTimestamp(),
-
-        userId:user.uid,
-
-      });
   
-      const orderID = orderRef.id;
-  
-      // Step 2: Organize products by storeID
-      const storesMap: Record<string, Product[]> = {};
-      cartItems.forEach((product: Product) => {
-        if (!product.storeId) {
-          console.error("Store ID is undefined for product:", product);
-          return; // Skip this product
-        }
-        if (!storesMap[product.storeId]) {
-          storesMap[product.storeId] = [];
-        }
-        storesMap[product.storeId].push(product);
-      });
-  
-      // Step 3: Save products under respective stores in Firestore
-      for (const [storeId, products] of Object.entries(storesMap)) {
-        const storeRef = doc(db, "Orders", orderID, "stores", storeId);
-        await setDoc(storeRef, {});
-  
-        for (const product of products) {
-          if (!product.id) {
-            console.error("Product ID is undefined for:", product);
-            continue; // Skip this product
-          }
-          const productRef = doc(db, "Orders", orderID, "stores", storeId, "products", product.id);
-          await setDoc(productRef, {
-            name: product.catalogueProductName|| product.name ,
-            price: product.price || '0',
-            quantity: product.quantity || 1,
-            id: product.id,
-            productImageUrl: product.productImageUrl,
-            
-          });
-        }
+      // Step 1: Check for Geolocation support
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
       }
   
-      // Step 4: Clear cart after successful order
-      await clearCart();
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
   
-      alert("Order placed successfully!");
-      router.push("/");
+          // Step 2: Create order document with location
+          const orderRef = await addDoc(collection(db, "Orders"), {
+            createdAt: serverTimestamp(),
+            userId: user.uid,
+            location: { latitude, longitude }, // Store user location
+          });
+  
+          const orderID = orderRef.id;
+  
+          // Step 3: Organize products by storeID
+          const storesMap: Record<string, Product[]> = {};
+          cartItems.forEach((product: Product) => {
+            if (!product.storeId) {
+              console.error("Store ID is undefined for product:", product);
+              return; // Skip this product
+            }
+            if (!storesMap[product.storeId]) {
+              storesMap[product.storeId] = [];
+            }
+            storesMap[product.storeId].push(product);
+          });
+  
+          // Step 4: Save products under respective stores in Firestore
+          for (const [storeId, products] of Object.entries(storesMap)) {
+            const storeRef = doc(db, "Orders", orderID, "stores", storeId);
+            await setDoc(storeRef, {});
+  
+            for (const product of products) {
+              if (!product.id) {
+                console.error("Product ID is undefined for:", product);
+                continue; // Skip this product
+              }
+              const productRef = doc(db, "Orders", orderID, "stores", storeId, "products", product.id);
+              await setDoc(productRef, {
+                name: product.catalogueProductName || product.name,
+                price: product.price || "0",
+                quantity: product.quantity || 1,
+                id: product.id,
+                productImageUrl: product.productImageUrl,
+              });
+            }
+          }
+  
+          // Step 5: Clear cart after successful order
+          await clearCart();
+  
+          alert("Order placed successfully!");
+          router.push("/");
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          alert("Failed to get your location. Please enable location services.");
+        }
+      );
     } catch (error) {
       console.error("Error placing order:", error);
       alert("Something went wrong while placing your order.");
