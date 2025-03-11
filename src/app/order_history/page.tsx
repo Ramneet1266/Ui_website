@@ -4,6 +4,7 @@ import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { db } from "@/app/lib/firebase"; 
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import Image from "next/image";
+import OrderTimeline from "../component/orderTimeline";
 
 interface Product {
   productImageUrl: string;
@@ -96,10 +97,14 @@ const OrderHistoryPage = () => {
     : orders.filter(order => order.status === filteredStatus);
 
   return (
-    <div className="container mx-auto p-6 min-h-screen mt-32">
+    
+    <div className="mt-32">
+      <OrderTimeline status="delivered" />
+    
+      <div className="container mt-32 mx-auto p-6 min-h-screen">
       <h1 className="text-2xl font-semibold mb-6 text-emerald-600 text-center">Order History</h1>
 
-      {/* ✅ Filter Buttons */}
+      {/* Filter Buttons */}
       <div className="flex justify-center space-x-2 mb-6">
         {["All", "Delivered", "Onway", "pending"].map((status) => (
           <button
@@ -107,10 +112,10 @@ const OrderHistoryPage = () => {
             onClick={() => setFilteredStatus(status)}
             className={`
               px-4 py-2 rounded text-white font-medium transition 
-              ${filteredStatus === status ? "bg-gray-900" 
-                : status === "Delivered" ? "bg-green-500" 
-                : status === "Onway" ? "bg-blue-500" 
-                : "bg-yellow-500"}
+              ${filteredStatus === status ? "bg-gray-900"
+                : status === "Delivered" ? "bg-green-500"
+                  : status === "Onway" ? "bg-blue-500"
+                    : "bg-yellow-500"}
             `}
           >
             {status}
@@ -124,16 +129,16 @@ const OrderHistoryPage = () => {
           {filteredOrders.map((order) => (
             <div key={order.id} className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto border-blue-500">
               <p className="text-gray-800">Order Date: <span className="font-medium">{order.createdAt}</span></p>
-              
+
               {/* ✅ Status Button */}
               <p className="text-black">
                 Status:
                 <button
                   className={`
                     ml-2 px-3 py-1 rounded text-white font-medium
-                    ${order.status === "Delivered" ? "bg-green-500" 
-                      : order.status === "Onway" ? "bg-blue-500" 
-                      : "bg-yellow-500"}
+                    ${order.status === "Delivered" ? "bg-green-500"
+                      : order.status === "Onway" ? "bg-blue-500"
+                        : "bg-yellow-500"}
                   `}
                 >
                   {order.status}
@@ -143,13 +148,12 @@ const OrderHistoryPage = () => {
               <div className="mt-4 space-y-4 ">
                 {order.products.map((product, index) => (
                   <div key={index} className="flex items-center space-x-4 border-b pb-3">
-                    <Image 
-                      src={product.productImageUrl} 
-                      alt={product.productName} 
-                      width={60} 
-                      height={60} 
-                      className="rounded-md object-cover" 
-                    />
+                    <Image
+                      src={product.productImageUrl}
+                      alt={product.productName}
+                      width={60}
+                      height={60}
+                      className="rounded-md object-cover" />
                     <div>
                       <p className="font-semibold">{product.productName}</p>
                       <p className="text-sm text-gray-600">Price: ₹{product.price}</p>
@@ -164,7 +168,7 @@ const OrderHistoryPage = () => {
       ) : (
         <p className="text-gray-500 text-center">No orders found.</p>
       )}
-    </div>
+    </div></div>
   );
 };
 

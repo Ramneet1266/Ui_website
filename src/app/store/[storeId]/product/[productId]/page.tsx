@@ -117,7 +117,7 @@ useEffect(() => {
 				 userId: user.uid,
 				 createdAt: serverTimestamp(),
 				 location:{latitude,longitude},
-				 status: "Pending", // Example status
+				 status: "pending", // Example status
 			 });
 			
         // Use the generated order ID for further actions
@@ -128,12 +128,12 @@ useEffect(() => {
 			// Add product under the store
 			const productRef = doc(storeRef, "products", productId)
 			await setDoc(productRef, {
-				productID: productId,
-				productName: product.catalogueProductName,
+				id: productId,
+				name: product.catalogueProductName,
+				price: parseFloat(product.price.replace(/[^0-9.]/g, "")),
 				productImageUrl: product.productImageUrl,
 				quantity: quantity,
-				price: product.price, // Use dynamic price
-				storeId: storeId,
+				// storeId: storeId,
 				
 			})
 	
