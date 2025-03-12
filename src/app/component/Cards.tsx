@@ -114,7 +114,7 @@ console.log("Checking ID:", product.id, "Found in cart?", isInCart);
 						)}
 						</button>
 						<button
-							onClick={() => toggleLike(product)}
+							onClick={() => toggleLike(product,storeId)}
 							className={`p-2 rounded-full shadow-md transition-all duration-300 ${
 								isLiked
 									? "text-red-500 scale-105"

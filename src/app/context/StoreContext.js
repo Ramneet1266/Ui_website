@@ -82,32 +82,68 @@ export function StoreProvider({ children }) {
     fetchCart();
   }, [user]);
 
-  const toggleLike = async (product) => {
+  // const toggleLike = async (product) => {
+  //   if (!user) {
+  //     console.error("User not authenticated");
+  //     return;
+  //   }
+
+  //   const productRef = doc(db, "Users", user.uid, "wishlist", product.id);
+
+  //   setLikedItems((prev) =>
+  //     prev.some((item) => item.id === product.id)
+  //       ? prev.filter((item) => item.id !== product.id)
+  //       : [...prev, product]
+  //   );
+
+  //   try {
+  //     const docSnapshot = await getDoc(productRef);
+  //     if (docSnapshot.exists()) {
+  //       await deleteDoc(productRef);
+  //     } else {
+  //       await setDoc(productRef, product);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating wishlist:", error);
+  //   }
+  // };
+ 
+  const toggleLike = async (product, storeId) => {
     if (!user) {
       console.error("User not authenticated");
       return;
     }
-
+  
+    if (!product || !product.id) {
+      console.error("Invalid product data:", product);
+      return;
+    }
+  
+    if (!storeId) {
+      console.error("Missing storeId for product:", product);
+      return;
+    }
+  
     const productRef = doc(db, "Users", user.uid, "wishlist", product.id);
-
+  
     setLikedItems((prev) =>
       prev.some((item) => item.id === product.id)
         ? prev.filter((item) => item.id !== product.id)
-        : [...prev, product]
+        : [...prev, { ...product, storeId }]
     );
-
+  
     try {
       const docSnapshot = await getDoc(productRef);
       if (docSnapshot.exists()) {
         await deleteDoc(productRef);
       } else {
-        await setDoc(productRef, product);
+        await setDoc(productRef, { ...product, storeId }); // Store storeId properly
       }
     } catch (error) {
       console.error("Error updating wishlist:", error);
     }
   };
-
+  
   const updateCartItem = (id, quantity) => {
     setCartItems((prev) =>
       prev.map((item) =>
