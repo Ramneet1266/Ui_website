@@ -5,9 +5,9 @@ import { useStore } from "../../context/StoreContext";
 import Image from "next/image";
 import { db } from "../../lib/firebase"; // Adjust Firebase import
 import { collection, addDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+// import { getAuth } from "firebase/auth";
 import { BsCart, BsCartDash, BsCartXFill } from "react-icons/bs";
-
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 interface Product {
   id: string;
   price: string; // Price is stored as a string, e.g., "$100"
@@ -44,36 +44,31 @@ const CartPage = () => {
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
 
-  const handlePlaceOrder = async () => {
-    try {
-      const auth = getAuth(); // Get auth instance
-      const user = auth.currentUser;
-  
+
+ 
+const handlePlaceOrder = async () => {
+  try {
+    const auth = getAuth();
+    
+    onAuthStateChanged(auth, async (user) => {
       if (!user) {
+        console.error("No authenticated user found.");
+        alert("Please log in to place an order.");
         return;
       }
-  
-      // Step 1: Check for Geolocation support
+
+      console.log("Current User UID:", user.uid);
+
       if (!navigator.geolocation) {
         alert("Geolocation is not supported by your browser.");
         return;
       }
-  
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-  
-          // Step 2: Create order document with location
-          const orderRef = await addDoc(collection(db, "Orders"), {
-            createdAt: serverTimestamp(),
-            userId: user.uid,
-            status:"pending",
-            location: { latitude, longitude }, // Store user location
-          });
-  
-          const orderID = orderRef.id;
-  
-          // Step 3: Organize products by storeID
+
+          // Step 1: Organize products by storeID
           const storesMap: Record<string, Product[]> = {};
           cartItems.forEach((product: Product) => {
             if (!product.storeId) {
@@ -85,18 +80,28 @@ const CartPage = () => {
             }
             storesMap[product.storeId].push(product);
           });
-  
-          // Step 4: Save products under respective stores in Firestore
-          for (const [storeId, products] of Object.entries(storesMap)) {
-            const storeRef = doc(db, "Orders", orderID, "stores", storeId);
-            await setDoc(storeRef, {});
-  
+
+          // Step 2: Create an order per store
+          const orderPromises = Object.entries(storesMap).map(async ([storeId, products]) => {
+            const orderRef = await addDoc(collection(db, "Orders"), {
+              createdAt: serverTimestamp(),
+              userId: user.uid, // Check if this matches your actual logged-in user
+              storeId,
+              status: "pending",
+              location: { latitude, longitude },
+            });
+
+            console.log(`Order placed with ID: ${orderRef.id} for user ${user.uid}`);
+
+            const orderID = orderRef.id;
+
+            // Step 3: Save products under the order
             for (const product of products) {
               if (!product.id) {
                 console.error("Product ID is undefined for:", product);
-                continue; // Skip this product
+                continue;
               }
-              const productRef = doc(db, "Orders", orderID, "stores", storeId, "products", product.id);
+              const productRef = doc(db, "Orders", orderID, "products", product.id);
               await setDoc(productRef, {
                 name: product.catalogueProductName || product.name,
                 price: product.price || "0",
@@ -105,24 +110,185 @@ const CartPage = () => {
                 productImageUrl: product.productImageUrl,
               });
             }
-          }
-  
-          // Step 5: Clear cart after successful order
+          });
+
+          await Promise.all(orderPromises);
           await clearCart();
-  
-          alert("Order placed successfully!");
-          router.push("/");
+
+          alert("Orders placed successfully!");
+          router.push("/order_history");
         },
         (error) => {
           console.error("Error getting location:", error);
           alert("Failed to get your location. Please enable location services.");
         }
       );
-    } catch (error) {
-      console.error("Error placing order:", error);
-      alert("Something went wrong while placing your order.");
-    }
-  };
+    });
+  } catch (error) {
+    console.error("Error placing order:", error);
+    alert("Something went wrong while placing your order.");
+  }
+};
+  // const handlePlaceOrder = async () => {
+  //   try {
+  //     const auth = getAuth(); // Get auth instance
+  //     const user = auth.currentUser;
+  
+  //     if (!user) {
+  //       return;
+  //     }
+  
+  //     if (!navigator.geolocation) {
+  //       alert("Geolocation is not supported by your browser.");
+  //       return;
+  //     }
+  
+  //     navigator.geolocation.getCurrentPosition(
+  //       async (position) => {
+  //         const { latitude, longitude } = position.coords;
+  
+  //         // Step 1: Organize products by storeID
+  //         const storesMap: Record<string, Product[]> = {};
+  //         cartItems.forEach((product: Product) => {
+  //           if (!product.storeId) {
+  //             console.error("Store ID is undefined for product:", product);
+  //             return; // Skip this product
+  //           }
+  //           if (!storesMap[product.storeId]) {
+  //             storesMap[product.storeId] = [];
+  //           }
+  //           storesMap[product.storeId].push(product);
+  //         });
+  
+  //         // Step 2: Create an order per store
+  //         const orderPromises = Object.entries(storesMap).map(async ([storeId, products]) => {
+  //           // Create a separate order for each store
+  //           const orderRef = await addDoc(collection(db, "Orders"), {
+  //             createdAt: serverTimestamp(),
+  //             userId: user.uid,
+  //             storeId, // Store ID in the order document
+  //             status: "pending",
+  //             location: { latitude, longitude },
+  //           });
+  
+  //           const orderID = orderRef.id;
+  
+  //           // Step 3: Save products under the order
+  //           for (const product of products) {
+  //             if (!product.id) {
+  //               console.error("Product ID is undefined for:", product);
+  //               continue; // Skip this product
+  //             }
+  //             const productRef = doc(db, "Orders", orderID, "products", product.id);
+  //             await setDoc(productRef, {
+  //               name: product.catalogueProductName || product.name,
+  //               price: product.price || "0",
+  //               quantity: product.quantity || 1,
+  //               id: product.id,
+  //               productImageUrl: product.productImageUrl,
+  //             });
+  //           }
+  //         });
+  
+  //         // Wait for all orders to be created
+  //         await Promise.all(orderPromises);
+  
+  //         // Step 4: Clear cart after all orders are placed
+  //         await clearCart();
+  
+  //         alert("Orders placed successfully!");
+  //         router.push("/order_history");
+  //       },
+  //       (error) => {
+  //         console.error("Error getting location:", error);
+  //         alert("Failed to get your location. Please enable location services.");
+  //       }
+  //     );
+  //   } catch (error) {
+  //     console.error("Error placing order:", error);
+  //     alert("Something went wrong while placing your order.");
+  //   }
+  // };
+  
+  // const handlePlaceOrder = async () => {
+  //   try {
+  //     const auth = getAuth(); // Get auth instance
+  //     const user = auth.currentUser;
+  
+  //     if (!user) {
+  //       return;
+  //     }
+  
+  //     // Step 1: Check for Geolocation support
+  //     if (!navigator.geolocation) {
+  //       alert("Geolocation is not supported by your browser.");
+  //       return;
+  //     }
+  
+  //     navigator.geolocation.getCurrentPosition(
+  //       async (position) => {
+  //         const { latitude, longitude } = position.coords;
+  
+  //         // Step 2: Create order document with location
+  //         const orderRef = await addDoc(collection(db, "Orders"), {
+  //           createdAt: serverTimestamp(),
+  //           userId: user.uid,
+  //           status:"pending",
+  //           location: { latitude, longitude }, // Store user location
+  //         });
+  
+  //         const orderID = orderRef.id;
+  
+  //         // Step 3: Organize products by storeID
+  //         const storesMap: Record<string, Product[]> = {};
+  //         cartItems.forEach((product: Product) => {
+  //           if (!product.storeId) {
+  //             console.error("Store ID is undefined for product:", product);
+  //             return; // Skip this product
+  //           }
+  //           if (!storesMap[product.storeId]) {
+  //             storesMap[product.storeId] = [];
+  //           }
+  //           storesMap[product.storeId].push(product);
+  //         });
+  
+  //         // Step 4: Save products under respective stores in Firestore
+  //         for (const [storeId, products] of Object.entries(storesMap)) {
+  //           const storeRef = doc(db, "Orders", orderID, "stores", storeId);
+  //           await setDoc(storeRef, {});
+  
+  //           for (const product of products) {
+  //             if (!product.id) {
+  //               console.error("Product ID is undefined for:", product);
+  //               continue; // Skip this product
+  //             }
+  //             const productRef = doc(db, "Orders", orderID, "stores", storeId, "products", product.id);
+  //             await setDoc(productRef, {
+  //               name: product.catalogueProductName || product.name,
+  //               price: product.price || "0",
+  //               quantity: product.quantity || 1,
+  //               id: product.id,
+  //               productImageUrl: product.productImageUrl,
+  //             });
+  //           }
+  //         }
+  
+  //         // Step 5: Clear cart after successful order
+  //         await clearCart();
+  
+  //         alert("Order placed successfully!");
+  //         router.push("/order_history");
+  //       },
+  //       (error) => {
+  //         console.error("Error getting location:", error);
+  //         alert("Failed to get your location. Please enable location services.");
+  //       }
+  //     );
+  //   } catch (error) {
+  //     console.error("Error placing order:", error);
+  //     alert("Something went wrong while placing your order.");
+  //   }
+  // };
   
   return (
     <div className="container mx-auto p-6 min-h-screen">

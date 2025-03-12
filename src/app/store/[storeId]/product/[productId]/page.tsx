@@ -10,6 +10,8 @@ import { db } from "@/app/lib/firebase"
 import { BsCartDash, BsCartPlus } from "react-icons/bs"
 
 interface Product {
+	// storeId: string;
+	name: string;
 	id: string;
 	price:string; // Price is stored as a string, e.g., "$100"
 	catalogueProductName: string;
@@ -84,7 +86,7 @@ useEffect(() => {
 
 	if (loading) return <p className="p-10">Loading...</p>
 	if (!product) return <p className="p-10">Product not found</p>
-
+	
 
 	const handleBuyNow = async () => {
 		const user = JSON.parse(localStorage.getItem("user") || "{}")
@@ -117,13 +119,14 @@ useEffect(() => {
 				 userId: user.uid,
 				 createdAt: serverTimestamp(),
 				 location:{latitude,longitude},
+				 storeId:storeId,
 				 status: "pending", // Example status
 			 });
 			
         // Use the generated order ID for further actions
         const orderId = orderRef.id
         // Reference to store sub-collection in the order
-        const storeRef = doc(db, "Orders", orderId, "stores", storeId)
+        const storeRef = doc(db, "Orders", orderId)
 			
 			// Add product under the store
 			const productRef = doc(storeRef, "products", productId)
